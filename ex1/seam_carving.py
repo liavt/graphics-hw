@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import itertools
+import numba
 
 def get_greyscale_image(image, colour_wts):
     """
@@ -64,6 +65,7 @@ def gradient_magnitude(image, colour_wts):
 
     return np.sqrt(np.power(greyscale - horz_shifted, 2) + np.power(greyscale - vert_shifted, 2))
 
+@numba.jit
 def energy(image, forward=False):
     """
     Helper function to calculate forward energy
@@ -111,15 +113,17 @@ def energy(image, forward=False):
                 dy = np.sum((down - up)**2)
                 energy[i,j] = np.sqrt(dx + dy)
         return energy
-        
-def cum_map(image):
+
+@numba.jit
+def cum_map(image, ignore_mask=None):
     height, width, _ = image.shape
     map_copy = energy(image, forward=True)
+    if ignore_mask is not None:
+        map_copy[ignore_mask] = np.max(map_copy) + 1
     skip = np.zeros_like(map_copy, dtype=np.int)
 
     for i in range(1, height):
         for j in range(0, width):
-
             if j == 0:
                 idx = np.argmin(map_copy[i - 1, j:j + 2])
                 skip[i, j] = idx + j
@@ -133,25 +137,28 @@ def cum_map(image):
 
     return map_copy, skip
 
+@numba.jit
 def calc_seam(image, seams):
     height, width, _ = image.shape
     image_map, skip = cum_map(image)
 
-    mask = np.ones((height, width), dtype=np.bool)
+    mask = np.zeros((height, width), dtype=np.bool)
    
     for i in range(seams):
         smallest = np.argmin(image_map[-1])
 
         for j in reversed(range(height)):
-            mask[j, smallest] = False
-            image_map[j,smallest] = 1000000
+            mask[j, smallest] = True
             smallest = skip[j, smallest]
+
+        image_map, skip = cum_map(image, mask)
 
     #mask = ([mask] * 3, axis=2)
     #image = image[mask].reshape((height, width - 1, 3))
 
     return mask
-        
+
+@numba.jit
 def visualise_seams(image, new_shape, carving_scheme, colour):
     """
     Visualises the seams that would be removed when reshaping an image to new image (see example in notebook)
