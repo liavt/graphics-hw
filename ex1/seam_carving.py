@@ -137,7 +137,6 @@ def flippa_back(image):
     image = np.rot90(image, -1, (0,1))
     return image
 
-@numba.jit
 def calc_seam(image, seams):
     height, width, _ = image.shape
     image_map, skip = cum_map(image)
@@ -213,14 +212,10 @@ def visualise_seams(image, new_shape, show_horizontal, colour):
     if show_horizontal:
         mask = flippa_back(mask)
         image_copy = flippa_back(image_copy)
-       
-    for i in range(height):
-        for j in range(width):
-            if mask[i,j]:
-                image_copy[i,j] = colour
 
-    return image_copy    
-    ###**************###
+    image_copy[mask] = colour
+
+    return image_copy
     
 def reshape_seam_crarving(image, new_shape, carving_scheme):
     """
@@ -233,16 +228,12 @@ def reshape_seam_crarving(image, new_shape, carving_scheme):
     ###Your code here###
     
     height, width, _ = image.shape
-    num_seams = width-new_shape[1]
-    mask = calc_seam(image, num_seams)
     image_copy = image.copy()
-    
-    for i in range(height):
-        for j in range(width):
-            if mask[i,j]:
-                image_copy = image_copy[~mask]
-        
-    return image_copy   
-        
-    ###**************###
-    #return new_image
+
+    if carving_scheme == 0:
+        vert_mask = calc_seam(image, width - new_shape[1])
+        image_copy = image_copy[~vert_mask].reshape((image.shape[0], new_shape[1], 3))
+        horz_mask = flippa_back(calc_seam(flippa_left(image_copy), height - new_shape[1]))
+        return image_copy[~horz_mask].reshape((new_shape[0], new_shape[1], 3))
+
+    return image_copy
