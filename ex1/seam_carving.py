@@ -106,26 +106,41 @@ def energy(image, forward=False):
 
 @numba.jit
 def cum_map(image, ignore_mask=None):
+    if ignore_mask is None:
+        ignore_mask = np.zeros((image.shape[0], image.shape[1]), dtype=np.bool)
+
     height, width, _ = image.shape
     map_copy = energy(image, forward=True)
-    
-    if ignore_mask is not None:
-        map_copy[ignore_mask] = np.max(map_copy) + 1
-        
+
+    map_copy[ignore_mask] = math.ceil(np.max(map_copy)) + 1
+
     skip = np.zeros_like(map_copy, dtype=np.int)
 
     for i in range(1, height):
         for j in range(0, width):
-            if j == 0:
-                index = np.argmin(map_copy[i - 1, j:j + 2])
-                skip[i, j] = index + j
-                min_energy = map_copy[i - 1, index + j]
-            else:
-                index = np.argmin(map_copy[i - 1, j - 1:j + 2])
-                skip[i, j] = index + j - 1
-                min_energy = map_copy[i - 1, index + j - 1]
+            indices = []
+            cells = []
+            if not ignore_mask[i - 1, j]:
+                indices.append(j)
+                cells.append(map_copy[i - 1, j])
+            leftmost_index = j - 1
+            while leftmost_index >= 0 and ignore_mask[i - 1, leftmost_index]:
+                leftmost_index -= 1
+            if leftmost_index >= 0:
+                indices.append(leftmost_index)
+                cells.append(map_copy[i - 1, leftmost_index])
 
-            map_copy[i, j] += min_energy
+            rightmost_index = j + 1
+            while rightmost_index < width and ignore_mask[i - 1, rightmost_index]:
+                rightmost_index += 1
+            if rightmost_index < width:
+                indices.append(rightmost_index)
+                cells.append(map_copy[i - 1, rightmost_index])
+
+            index = np.argmin(cells)
+            skip[i, j] = indices[index]
+
+            map_copy[i, j] += cells[index]
 
     return map_copy, skip
 
@@ -136,7 +151,7 @@ def flippa_left(image):
 def flippa_back(image):
     image = np.rot90(image, -1, (0,1))
     return image
-
+@numba.jit
 def calc_seam(image, seams):
     height, width, _ = image.shape
     image_map, skip = cum_map(image)
@@ -147,14 +162,14 @@ def calc_seam(image, seams):
         smallest = np.argmin(image_map[-1])
 
         for j in reversed(range(height)):
+            if mask[j, smallest]:
+                print("woops")
             mask[j, smallest] = True
             smallest = skip[j, smallest]
 
         image_map, skip = cum_map(image, mask)
 
     return mask
-
-
 
 # def cut_seam(image):
 #     """
@@ -177,16 +192,6 @@ def calc_seam(image, seams):
 
 #     return image_copy
 
-
-def cut_seam(image, num_seams):
-    height, width, _ = image.shape
-    new_width = width - num_seams
-
-    for i in range(new_width): 
-        image = calc_seam(image, new_width)
-
-    return image
-    
 def visualise_seams(image, new_shape, show_horizontal, colour):
     """
     Visualises the seams that would be removed when reshaping an image to new image (see example in notebook)
@@ -216,7 +221,14 @@ def visualise_seams(image, new_shape, show_horizontal, colour):
     image_copy[mask] = colour
 
     return image_copy
-    
+
+def delete_vert_seams(image, amount_of_seams, scale_factor):
+    return image[~calc_seam(image, amount_of_seams)].reshape((image.shape[0], image.shape[1] - amount_of_seams, 3))
+
+def delete_horz_seams(image, amount_of_seams, scale_factor):
+    return flippa_back(delete_vert_seams(flippa_left(image), amount_of_seams, scale_factor))
+
+@numba.jit
 def reshape_seam_crarving(image, new_shape, carving_scheme):
     """
     Resizes an image to new shape using seam carving
@@ -228,12 +240,24 @@ def reshape_seam_crarving(image, new_shape, carving_scheme):
     ###Your code here###
     
     height, width, _ = image.shape
-    image_copy = image.copy()
+    h_scale_factor = math.ceil(new_shape[0] / height)
+    w_scale_factor = math.ceil(new_shape[1] / width)
+    '''
+    if h_scale_factor > 1 or w_scale_factor > 1:
+        print()
+        return reshape_seam_crarving(np.repeat(np.repeat(image.copy(), h_scale_factor, axis=0), w_scale_factor, axis=1), new_shape, carving_scheme)
+    '''
 
+    image_copy = image.copy()
     if carving_scheme == 0:
-        vert_mask = calc_seam(image, width - new_shape[1])
-        image_copy = image_copy[~vert_mask].reshape((image.shape[0], new_shape[1], 3))
-        horz_mask = flippa_back(calc_seam(flippa_left(image_copy), height - new_shape[1]))
-        return image_copy[~horz_mask].reshape((new_shape[0], new_shape[1], 3))
+        return delete_horz_seams(delete_vert_seams(image, abs(image.shape[1] - new_shape[1]), w_scale_factor), abs(image.shape[0] - new_shape[0]), h_scale_factor)
+    elif carving_scheme == 1:
+        return delete_vert_seams(delete_horz_seams(image, abs(image.shape[0] - new_shape[0]), h_scale_factor), abs(image.shape[1] - new_shape[1]), w_scale_factor)
+    elif carving_scheme == 2:
+        while image_copy.shape != new_shape:
+            if image_copy.shape[0] != new_shape[0]:
+                image_copy = delete_horz_seams(image_copy, 1, h_scale_factor)
+            if image_copy.shape[1] != new_shape[1]:
+                image_copy = delete_vert_seams(image_copy, 1, w_scale_factor)
 
     return image_copy
