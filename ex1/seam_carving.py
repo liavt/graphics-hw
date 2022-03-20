@@ -44,7 +44,8 @@ def reshape_bilinear(img, new_shape):
     d = image[y_top + x_right] * x_coefficients * y_coefficients
 
     return (a + b + c + d).astype('uint8').reshape((new_shape[0], new_shape[1], 3))
-    
+
+@numba.jit()
 def gradient_magnitude(image, colour_wts):
     """
     Calculates the gradient image of a given image
@@ -65,7 +66,7 @@ def gradient_magnitude(image, colour_wts):
 
     return np.sqrt(np.power(greyscale - horz_shifted, 2) + np.power(greyscale - vert_shifted, 2))
 
-@numba.jit
+@numba.jit()
 def energy(image, forward=False):
     """
     Helper function to calculate forward energy
@@ -104,7 +105,7 @@ def energy(image, forward=False):
     else:
         return image 
 
-@numba.jit
+@numba.jit()
 def cum_map(image, ignore_mask=None):
     if ignore_mask is None:
         ignore_mask = np.zeros((image.shape[0], image.shape[1]), dtype=np.bool)
@@ -145,13 +146,12 @@ def cum_map(image, ignore_mask=None):
     return map_copy, skip
 
 def flippa_left(image):
-    image = np.rot90(image, 1, (0,1))
-    return image
+    return np.rot90(image, 1, (0,1))
 
 def flippa_back(image):
-    image = np.rot90(image, -1, (0,1))
-    return image
-@numba.jit
+    return np.rot90(image, -1, (0,1))
+
+@numba.jit()
 def calc_seam(image, seams):
     height, width, _ = image.shape
     image_map, skip = cum_map(image)
@@ -170,27 +170,6 @@ def calc_seam(image, seams):
         image_map, skip = cum_map(image, mask)
 
     return mask
-
-# def cut_seam(image):
-#     """
-#     """
-    
-#     height, width, _ = image.shape
-#     image_map, skip = cum_map(iage)
-#     mask = np.zeros((height, width), dtype=np.bool)
-#     image_copy = image.copy()
-
-#     smallest = np.argmin(image_map[-1])
-
-#     for i in reversed(range(height)):
-#         mask[i, smallest] = False
-#         smallest = skip[i, smallest]
-
-#     mask = np.stack([mask] * 3, axis=2)
-
-#     image_copy = image_copy[mask].reshape((height, width - 1, 3))
-
-#     return image_copy
 
 def visualise_seams(image, new_shape, show_horizontal, colour):
     """
@@ -223,7 +202,13 @@ def visualise_seams(image, new_shape, show_horizontal, colour):
     return image_copy
 
 def delete_vert_seams(image, amount_of_seams, scale_factor):
-    return image[~calc_seam(image, amount_of_seams)].reshape((image.shape[0], image.shape[1] - amount_of_seams, 3))
+    scaled_image = np.repeat(image, scale_factor, axis=1).reshape(image.shape[0], image.shape[1] * scale_factor, 3)
+    mask = np.repeat(calc_seam(image, amount_of_seams % image.shape[1]), scale_factor, axis=1).reshape((scaled_image.shape[0], scaled_image.shape[1]))
+    if scale_factor > 1:
+        mask[:, (np.mod(np.arange(mask.shape[1]), scale_factor) != 0)] = True
+        mask = ~mask
+        return scaled_image[~mask].reshape((image.shape[0], image.shape[1] + amount_of_seams, 3))
+    return scaled_image[~mask].reshape((image.shape[0], image.shape[1] - amount_of_seams, 3))
 
 def delete_horz_seams(image, amount_of_seams, scale_factor):
     return flippa_back(delete_vert_seams(flippa_left(image), amount_of_seams, scale_factor))
