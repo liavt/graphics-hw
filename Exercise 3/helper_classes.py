@@ -10,8 +10,7 @@ def normalize(vector):
 # This function gets a vector and the normal of the surface it hit
 # This function returns the vector that reflects from the surface
 def reflected(vector, normal):
-    v = np.array([0,0,0])
-    return v
+    return vector - (2 * (vector @ normal) * normal)
 
 ## Lights
 
@@ -24,19 +23,18 @@ class LightSource:
 
 class DirectionalLight(LightSource):
 
-    def __init__(self, intensity):
+    def __init__(self, intensity, direction, position=[0, 0, 0]):
         super().__init__(intensity)
-        # TODO
+        self.position = position
+        self.direction = direction
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        # TODO
-        return Ray()
+        return Ray(intersection_point,normalize(self.position - intersection_point))
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
-        #TODO
-        pass
+        return np.linalg.norm(intersection - self.position)
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
@@ -94,13 +92,20 @@ class Ray:
         self.direction = direction
 
     # The function is getting the collection of objects in the scene and looks for the one with minimum distance.
-    # The function should return the nearest object and its distance (in two different arguments)
+    # The function returns the distance, object, and normal of the closest intersected object, or None if none found
     def nearest_intersected_object(self, objects):
-        nearest_object = None
-        min_distance = np.inf
-        #TODO
-        return nearest_object, min_distance
+        intersections = map(lambda obj: obj.intersect(self), objects)
+        # create array of distance of each object
+        distances = [intersection[0] if intersection is not None else np.inf for intersection in intersections]
+        # find closest intersection points
+        closest_distance_idx = np.argmin(distances)
+        if distances[closest_distance_idx] >= np.inf:
+            return None
+        return intersections[closest_distance_idx]
 
+    # Reverses the direction of this ray
+    def reverse(self):
+        return Ray(self.origin, -self.direction)
 
 class Object3D:
 
@@ -121,11 +126,9 @@ class Plane(Object3D):
         v = self.point - ray.origin
         t = (np.dot(v, self.normal) / np.dot(self.normal, ray.direction))
         if t > 0:
-            return t, self
+            return t, self, self.normal
         else:
             return None
-
-
 
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
@@ -166,9 +169,7 @@ class Mesh(Object3D):
         self.triangle_list = self.create_triangle_list()
 
     def create_triangle_list(self):
-        l = []
-        # TODO
-        return l
+        return [Triangle(face[0], face[1], face[2]) for face in self.f_list]
 
     def apply_materials_to_triangles(self):
         for t in self.triangle_list:
