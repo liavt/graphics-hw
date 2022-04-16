@@ -1,6 +1,5 @@
 import numpy as np
 
-
 # This function gets a vector and returns its normalized form.
 def normalize(vector):
     return vector / np.linalg.norm(vector)
@@ -14,8 +13,6 @@ def reflected(vector, normal):
     return v
 
 ## Lights
-
-
 class LightSource:
 
     def __init__(self, intensity):
@@ -87,7 +84,7 @@ class SpotLight(LightSource):
         #TODO
         pass
 
-
+# Ilana
 class Ray:
     def __init__(self, origin, direction):
         self.origin = origin
@@ -126,7 +123,7 @@ class Plane(Object3D):
             return None
 
 
-
+# Ilana
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
     def __init__(self, a, b, c):
@@ -136,25 +133,56 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        # TODO
-        n = np.array()
+        n = (self.b-self.a).crossProduct(self.c-self.a); 
         return n
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
-        #TODO
-        pass
+        
+        # How do I name this idek
+        
+        n = compute_normal(self)
+        direc = ray.direction
+        o = ray.origin
+        a = self.a
+        b = self.b
+        c = self.c
+        
+        d = b-a
+        e = c-a
+        
+        vector = direc.cross(e)
+
+        det = d.dot(vector)
+
+        inv = 1.0 / det
+        vec = o - a
+        u = vec.dot(vector) * inv
+
+        v = vec.cross(d)
+        x = direc.dot(v) * inv
 
 
+        return e.dot(v) * inv
+        
+# Ilana
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
         self.center = center
         self.radius = radius
 
     def intersect(self, ray: Ray):
-        #TODO
-        pass
+        # quadratic equation time 
+        b = 2 * np.dot(ray.direction, ray.origin - self.center)
+        c = np.linalg.norm(ray.origin - self.center) ** 2 - self.radius ** 2
+        delta = b ** 2 - 4 * c
+        if delta > 0:
+            plus = (-b + np.sqrt(delta)) / 2
+            minus = (-b - np.sqrt(delta)) / 2
+            if plus > 0 and minus > 0:
+                return min(plus, minus)
+        return None
 
 
 class Mesh(Object3D):
