@@ -109,12 +109,14 @@ class Ray:
 
 class Object3D:
 
-    def set_material(self, ambient, diffuse, specular, shininess, reflection):
+    def set_material(self, ambient, diffuse, specular, shininess, reflection, transparency=0, refraction_index=1):
         self.ambient = ambient
         self.diffuse = diffuse
         self.specular = specular
         self.shininess = shininess
         self.reflection = reflection
+        self.transparency = transparency
+        self.refraction_index = refraction_index
 
 
 class Plane(Object3D):
@@ -130,6 +132,7 @@ class Plane(Object3D):
         else:
             return None
 
+# Ilana
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
     def __init__(self, a, b, c):
@@ -139,25 +142,51 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        # TODO
-        n = np.array()
-        return n
+        return (self.b - self.a).crossProduct(self.c - self.a)
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
-        #TODO
-        pass
+        # How do I name this idek
+        direc = ray.direction
+        o = ray.origin
+        a = self.a
+        b = self.b
+        c = self.c
 
+        d = b - a
+        e = c - a
 
+        vector = direc.cross(e)
+
+        det = d.dot(vector)
+
+        inv = 1.0 / det
+        vec = o - a
+        u = vec.dot(vector) * inv
+
+        v = vec.cross(d)
+        x = direc.dot(v) * inv
+
+        return e.dot(v) * inv, self, self.normal
+
+# Ilana
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
         self.center = center
         self.radius = radius
 
     def intersect(self, ray: Ray):
-        #TODO
-        pass
+        # quadratic equation time
+        b = 2 * np.dot(ray.direction, ray.origin - self.center)
+        c = np.linalg.norm(ray.origin - self.center) ** 2 - self.radius ** 2
+        delta = b ** 2 - 4 * c
+        if delta > 0:
+            plus = (-b + np.sqrt(delta)) / 2
+            minus = (-b - np.sqrt(delta)) / 2
+            if plus > 0 and minus > 0:
+                return min(plus, minus), self, normalize(ray.origin - self.center)
+        return None
 
 
 class Mesh(Object3D):
@@ -178,5 +207,4 @@ class Mesh(Object3D):
     # Hint: Intersect returns both distance and nearest object.
     # Keep track of both.
     def intersect(self, ray: Ray):
-        #TODO
-        pass
+        return ray.nearest_intersected_object(self.triangle_list)
