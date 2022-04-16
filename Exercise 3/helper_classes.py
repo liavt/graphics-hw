@@ -6,7 +6,6 @@ def normalize(vector):
     return vector / np.linalg.norm(vector)
 
 
-# TODO:
 # This function gets a vector and the normal of the surface it hit
 # This function returns the vector that reflects from the surface
 def reflected(vector, normal):
@@ -148,27 +147,17 @@ class Triangle(Object3D):
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
         # How do I name this idek
-        direc = ray.direction
-        o = ray.origin
-        a = self.a
-        b = self.b
-        c = self.c
 
-        d = b - a
-        e = c - a
+        d = self.b - self.a
+        e = self.c - self.a
 
-        vector = direc.cross(e)
+        vector = np.cross(ray.direction, e)
 
-        det = d.dot(vector)
+        det = d @ vector
 
-        inv = 1.0 / det
-        vec = o - a
-        u = vec.dot(vector) * inv
+        v = np.cross(ray.origin - self.a, d)
 
-        v = vec.cross(d)
-        x = direc.dot(v) * inv
-
-        return e.dot(v) * inv, self, self.normal
+        return e.dot(v) / det, self, self.normal
 
 # Ilana
 class Sphere(Object3D):

@@ -26,13 +26,6 @@ def get_color_from_ray(ray, ambient, lights, objects, remaining_reflects):
         diffuse = 0
         specular = 0
 
-        light_rays = [light.get_light_ray(intersection) for light in lights]
-        visible_light_idx = [i for i in range(len(light_rays)) if light_rays[i].reverse().nearest_intersected_object(objects) is None]
-        visible_light_rays = light_rays[visible_light_idx]
-        visible_lights = lights[visible_light_idx]
-        visible_light_intensities = [light.get_intensity(intersection) for light in visible_lights]
-        
-        '''
         for light in lights:
             light_ray = light.get_light_ray(intersection)
             # check that nothing occludes this light
@@ -43,7 +36,6 @@ def get_color_from_ray(ray, ambient, lights, objects, remaining_reflects):
 
                 reflect = reflected(light_ray.direction, normal)
                 specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
-        '''
 
         reflection = 0
         refraction = 0
