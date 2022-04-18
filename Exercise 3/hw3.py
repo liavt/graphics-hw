@@ -75,25 +75,22 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
     for light in scene.lights:
         light_ray = light.get_light_ray(intersection + (normal * BIAS))
         # check that nothing occludes this light
-        visible = light_ray.nearest_intersected_object(scene.objects)[0] is None
+        occluder = light_ray.nearest_intersected_object(scene.objects)
+        # was there nothing in the way or was the occluding object "behind" the light
+        visible = occluder[0] is None or occluder[0] > light.get_distance_from_light(intersection)
         if visible:
             intensity = light.get_intensity(intersection)
             diffuse += intensity * max(0, normal @ light_ray.direction)
 
             reflect = reflected(-light_ray.direction, normal)
-            #specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
-        else:
-            #print(obj.point)
-            #print(light_ray.nearest_intersected_object(scene.objects)[1].point)
-            return [1,0,0]
-            #print("Rea")
+            specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
 
-    #reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects)
+    reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects - 1)
 
     #diffuse = 0
     #specular = 0
-    reflection = 0
-    refraction = 0
+    #reflection = 0
+    #refraction = 0
 
     return compute_final_color(obj, [scene.ambient, diffuse, specular, reflection, refraction])
 
