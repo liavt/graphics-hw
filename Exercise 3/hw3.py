@@ -60,7 +60,7 @@ def compute_recursive_colors(lighting_func, obj, normal, intersection, ray, scen
 
 
 def compute_final_color(obj, coefficients):
-    return np.dot(coefficients, [obj.ambient, obj.diffuse, obj.specular, obj.reflection, obj.transparency])
+    return np.dot(coefficients, np.array([obj.ambient, obj.diffuse, obj.specular, obj.reflection, obj.transparency], dtype='object'))
 
 
 def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):

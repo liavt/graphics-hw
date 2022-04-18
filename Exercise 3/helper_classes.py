@@ -160,7 +160,7 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        return (self.b - self.a).crossProduct(self.c - self.a)
+        return np.cross((self.b - self.a), (self.c - self.a))
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
