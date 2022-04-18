@@ -25,14 +25,13 @@ class LightSource:
 
 class DirectionalLight(LightSource):
 
-    def __init__(self, intensity, direction, position=[0, 0, 0]):
+    def __init__(self, intensity, direction):
         super().__init__(intensity)
-        self.position = position
-        self.direction = direction
+        self.direction = np.array(direction)
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        return Ray(intersection_point,normalize(self.position - intersection_point))
+        return Ray(intersection_point, -self.direction)
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
@@ -88,7 +87,7 @@ class SpotLight(LightSource):
         v = np.linalg.norm(intersection - self.position)
         v_tag = v / abs(v)
         d = self.get_distance_from_light(intersection)
-        direction = np.linalg.norm(self.direction)
+        direction = normalize(self.direction)
         return (self.intensity * direction * v_tag) / (self.kc + self.kl*d + self.kq * (d**2))
 
 
@@ -160,23 +159,34 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        return np.cross((self.b - self.a), (self.c - self.a))
+        return normalize(np.cross((self.b - self.a), (self.c - self.a)))
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
         # How do I name this idek
-
+        
+        plane = Plane(self.normal, self.a)
+        inter = plane.intersect(ray)
+        plane_intersect = ray.origin + inter[0] * ray.direction
+        a = plane_intersect - self.a
+        b = plane_intersect - self.b
+        c = plane_intersect - self.c
         d = self.b - self.a
         e = self.c - self.a
-
         vector = np.cross(ray.direction, e)
-
         det = d @ vector
-
         v = np.cross(ray.origin - self.a, d)
-
-        return e.dot(v) / det, self, self.normal
+        val = e.dot(v) / det, self, self.normal
+        
+        double_area = np.cross(self.b - self.a, self.c - self.a)
+        gamma = 1 - np.cross(b, c) - np.cross(c, a)
+        i = np.cross(b,c)
+        j = np.cross(c,a)
+        if ((0 <= i <= 1) and (0<= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
+            return plane_intersect, self
+        else:
+            return None
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
