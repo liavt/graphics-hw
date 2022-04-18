@@ -165,17 +165,27 @@ class Triangle(Object3D):
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
         # How do I name this idek
-
+        
+        plane = Plane(self.normal, self.a)
+        inter = plane.intersect(ray)
+        plane_intersect = ray.origin + inter[0] * ray.direction
+        a = plane_intersect - self.a
+        b = plane_intersect - self.b
+        c = plane_intersect - self.c
         d = self.b - self.a
         e = self.c - self.a
-
         vector = np.cross(ray.direction, e)
-
         det = d @ vector
-
         v = np.cross(ray.origin - self.a, d)
+        val = e.dot(v) / det, self, self.normal
+        
+        double_area = np.cross(self.b - self.a, self.c - self.a)
+        gamma = 1 - np.cross(b, c) - np.cross(c, a)
+        if ((0 <= np.cross(b,c) <= 1) and (<= np.cross(c,a) <= 1) and (0<=gamma<=1) and (.9999 <= (np.cross(b,c)+np.cross(c,a)+gamma) <= 1:
+                                                                                         return plane_intersect, self
+        else:
+                                                                                         return None
 
-        return = e.dot(v) / det, self, self.normal
 
     def barycentric(self, point):
         a = self.a - point
