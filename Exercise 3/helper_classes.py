@@ -181,22 +181,12 @@ class Triangle(Object3D):
         
         double_area = np.cross(self.b - self.a, self.c - self.a)
         gamma = 1 - np.cross(b, c) - np.cross(c, a)
-        if ((0 <= np.cross(b,c) <= 1) and (<= np.cross(c,a) <= 1) and (0<=gamma<=1) and (.9999 <= (np.cross(b,c)+np.cross(c,a)+gamma) <= 1:
-                                                                                         return plane_intersect, self
+        i = np.cross(b,c)
+        j = np.cross(c,a)
+        if ((0 <= i <= 1) and (0<= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
+            return plane_intersect, self
         else:
-                                                                                         return None
-
-
-    def barycentric(self, point):
-        a = self.a - point
-        b = self.b - point
-        c = self.c - point
-
-        area = np.dot(self.normal, np.cross(self.b - self.a, self.c - self.a)) / 2
-        gamma = 1 - (np.dot(self.normal, np.cross(b, c)) / (2 * area)) - (np.dot(self.normal, np.cross(c, a)) / (2 * area))
-        
-        results = [True if 0 <= x <= 1 else False for x in [alpha, beta, gamma]]
-        return all(results)
+            return None
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
