@@ -184,7 +184,7 @@ class Triangle(Object3D):
         i = np.cross(b,c)
         j = np.cross(c,a)
         if ((0 <= i <= 1) and (0<= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
-            return plane_intersect, self
+            return plane_intersect, self, self.normal
         else:
             return None
 

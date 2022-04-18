@@ -81,9 +81,11 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
             diffuse += intensity * max(0, normal @ light_ray.direction)
 
             reflect = reflected(-light_ray.direction, normal)
-            specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
+            #specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
         else:
-            pass
+            #print(obj.point)
+            #print(light_ray.nearest_intersected_object(scene.objects)[1].point)
+            return [1,0,0]
             #print("Rea")
 
     #reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects)
