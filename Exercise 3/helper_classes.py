@@ -84,11 +84,10 @@ class SpotLight(LightSource):
         return np.linalg.norm(intersection - self.position)
     
     def get_intensity(self, intersection):
-        v = np.linalg.norm(intersection - self.position)
-        v_tag = v / abs(v)
+        big_v_tag = normalize(intersection - self.position)
         d = self.get_distance_from_light(intersection)
-        direction = normalize(self.direction)
-        return (self.intensity * direction * v_tag) / (self.kc + self.kl*d + self.kq * (d**2))
+        direction = -(self.direction/ np.linalg.norm(self.direction))
+        return (self.intensity * np.dot(big_v_tag, direction)) / (self.kc + self.kl*d + self.kq * (d**2))
 
 
 class Ray:
@@ -159,25 +158,18 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        return normalize(np.cross((self.b - self.a), (self.c - self.a)))
+        return np.cross((self.b - self.a), (self.c - self.a))
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
         # How do I name this idek
-        
         plane = Plane(self.normal, self.a)
         inter = plane.intersect(ray)
         plane_intersect = ray.origin + inter[0] * ray.direction
         a = plane_intersect - self.a
         b = plane_intersect - self.b
         c = plane_intersect - self.c
-        d = self.b - self.a
-        e = self.c - self.a
-        vector = np.cross(ray.direction, e)
-        det = d @ vector
-        v = np.cross(ray.origin - self.a, d)
-        val = e.dot(v) / det, self, self.normal
         
         double_area = np.cross(self.b - self.a, self.c - self.a)
         gamma = 1 - np.cross(b, c) - np.cross(c, a)
