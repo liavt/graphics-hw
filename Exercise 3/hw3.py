@@ -35,12 +35,17 @@ class Scene:
         return self.get_color_from_ray(self.get_ray_for_camera_pixel(pixel), lighting_func, max_depth)
 
     def render(self, lighting_func, max_depth):
-        image = np.zeros((self.resolution[1], self.resolution[0], 3))
+        width, height = self.resolution
+        ratio = float(width) / height
+        screen = (-1, 1 / ratio, 1, -1 / ratio)  # left, top, right, bottom
 
-        for i, y in enumerate(range(self.resolution[1])):
-            for j, x in enumerate(range(self.resolution[0])):
+        image = np.zeros((height, width, 3))
+
+        for i, y in enumerate(np.linspace(screen[1], screen[3], height)):
+            for j, x in enumerate(np.linspace(screen[0], screen[2], width)):
+                pixel = np.array([x, y, 0])
                 # We clip the values between 0 and 1 so all pixel values will make sense.
-                image[i, j] = np.clip(self.get_color_for_pixel([x,y], lighting_func, max_depth), 0, 1)
+                image[i, j] = np.clip(self.get_color_from_ray(Ray(self.camera, normalize(pixel - self.camera)), lighting_func, max_depth), 0, 1)
 
         return image
 
@@ -68,17 +73,25 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
     specular = 0
 
     for light in scene.lights:
-        light_ray = light.get_light_ray(intersection)
+        light_ray = light.get_light_ray(intersection + (normal * BIAS))
         # check that nothing occludes this light
         visible = light_ray.nearest_intersected_object(scene.objects)[0] is None
         if visible:
             intensity = light.get_intensity(intersection)
             diffuse += intensity * max(0, normal @ light_ray.direction)
 
-            reflect = reflected(light_ray.direction, normal)
+            reflect = reflected(-light_ray.direction, normal)
             specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
+        else:
+            pass
+            #print("Rea")
 
-    reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects)
+    #reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects)
+
+    #diffuse = 0
+    #specular = 0
+    reflection = 0
+    refraction = 0
 
     return compute_final_color(obj, [scene.ambient, diffuse, specular, reflection, refraction])
 
