@@ -10,6 +10,10 @@ def normalize(vector):
 def reflected(vector, normal):
     return vector - (2 * (vector @ normal) * normal)
 
+
+def triangle_area(A, B, C):
+    return np.linalg.norm(np.cross(B - A, C - A)) / 2
+
 # we add a little bit of bias to make the intersection "above" the surface when we reflect and refract
 # otherwise it may immediately intersect with the object it came from
 BIAS = 1e-4
@@ -27,15 +31,15 @@ class DirectionalLight(LightSource):
 
     def __init__(self, intensity, direction):
         super().__init__(intensity)
-        self.direction = np.array(direction)
+        self.direction = normalize(direction)
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        return Ray(intersection_point, -self.direction)
+        return Ray(intersection_point, self.direction)
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
-        return float('inf')
+        return math.inf
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
@@ -162,16 +166,11 @@ class Triangle(Object3D):
         if distance >= math.inf:
             return math.inf, self, self.normal
         else:
-            plane_intersect = ray.origin + distance * ray.direction
-            a = plane_intersect - self.a
-            b = plane_intersect - self.b
-            c = plane_intersect - self.c
-            i = np.linalg.norm(np.cross(b,c))
-            j = np.linalg.norm(np.cross(c,a))
-
-            double_area = np.cross(self.b - self.a, self.c - self.a)
-            gamma = 1 - i - j
-            if ((0 <= i <= 1) and (0 <= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
+            point = ray.origin + distance * ray.direction
+            if abs(triangle_area(self.a, self.b, self.c) -
+                    (triangle_area(self.a, self.b, point)
+                     + triangle_area(self.a, self.c, point)
+                     + triangle_area(self.b, self.c, point))) < 0.0001:
                 return distance, self, self.normal
             else:
                 return math.inf, self, self.normal
@@ -191,8 +190,9 @@ class Sphere(Object3D):
             plus = (-b + np.sqrt(delta)) / 2
             minus = (-b - np.sqrt(delta)) / 2
             if plus > 0 and minus > 0:
-                return min(plus, minus), self, normalize(normal)
-        return math.inf, self, normalize(normal)
+                t = min(plus, minus)
+                return t, self, normalize((ray.origin + t * ray.direction) - self.center)
+        return math.inf, self, [0,0,0]
 
 
 class Mesh(Object3D):
