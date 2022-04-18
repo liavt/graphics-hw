@@ -67,7 +67,6 @@ class PointLight(LightSource):
 
 class SpotLight(LightSource):
 
-
     def __init__(self, intensity, position, direction, kc, kl, kq):
         super().__init__(intensity)
         self.kc = kc
@@ -166,19 +165,22 @@ class Triangle(Object3D):
         # How do I name this idek
         plane = Plane(self.normal, self.a)
         inter = plane.intersect(ray)
-        plane_intersect = ray.origin + inter[0] * ray.direction
-        a = plane_intersect - self.a
-        b = plane_intersect - self.b
-        c = plane_intersect - self.c
-        
-        double_area = np.cross(self.b - self.a, self.c - self.a)
-        gamma = 1 - np.cross(b, c) - np.cross(c, a)
-        i = np.cross(b,c)
-        j = np.cross(c,a)
-        if ((0 <= i <= 1) and (0<= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
-            return plane_intersect, self, self.normal
-        else:
+        if inter is None:
             return None
+        else:
+            plane_intersect = ray.origin + inter[0] * ray.direction
+            a = plane_intersect - self.a
+            b = plane_intersect - self.b
+            c = plane_intersect - self.c
+            i = np.linalg.norm(np.cross(b,c))
+            j = np.linalg.norm(np.cross(c,a))
+
+            double_area = np.cross(self.b - self.a, self.c - self.a)
+            gamma = 1 - i - j
+            if ((0 <= i <= 1) and (0 <= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
+                return plane_intersect, self, self.normal
+            else:
+                return None
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
