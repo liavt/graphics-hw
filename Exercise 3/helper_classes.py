@@ -31,7 +31,7 @@ class DirectionalLight(LightSource):
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        return Ray(intersection_point,normalize(self.position - intersection_point))
+        return Ray(intersection_point,normalize(self.direction - intersection_point))
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
@@ -78,7 +78,7 @@ class SpotLight(LightSource):
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection):
-        return Ray(intersection,normalize(self.position - intersection))
+        return Ray(intersection_point, -self.direction)
 
     def get_distance_from_light(self,intersection):
         return np.linalg.norm(intersection - self.position)
