@@ -2,75 +2,103 @@ from helper_classes import *
 import math
 import matplotlib.pyplot as plt
 
-# we add a little bit of bias to make the intersection "above" the surface when we reflect and refract
-# otherwise it may immediately intersect with the object it came from
-BIAS = 1e-4
 
-def reflect_ray(ray, normal):
-    return Ray(ray.origin + (normal * BIAS), reflected(ray.direction, normal))
+# Contains information about a scene including camera light and objects
+class Scene:
+    def __init__(self, camera, ambient, lights, objects, resolution):
+        self.resolution = resolution
+        self.camera = camera
+        v_up = normalize([0, 1, 1])
+        self.v_right = normalize(np.cross(-camera, v_up))
+        self.v_up_hat = normalize(np.cross(self.v_right, -camera))
+        self.ambient = ambient
+        self.lights = lights
+        self.objects = objects
 
-def refract_ray(ray, normal, refract_index):
-    cosi = -(normal @ ray.direction)
-    k = 1 - refract_index * refract_index * (1 - cosi * cosi)
-    return Ray(ray.origin - (normal * BIAS),
-               normalize(ray.direction * refract_index + normal * (refract_index * cosi - math.sqrt(k))))
+    def get_ray_for_camera_pixel(self, pixel):
+        return Ray(self.camera, -self.camera +
+                   (1 / self.resolution[0]) * (((pixel[0] - math.floor(self.resolution[0] / 2)) * self.v_right) - (
+                           (pixel[1] - math.floor(self.resolution[1] / 2)) * self.v_up_hat)))
 
-def get_color_from_ray(ray, ambient, lights, objects, remaining_reflects):
-    dis, obj, normal = ray.nearest_intersected_object(objects)
-    if dis is None:
-        return ambient
-    else:
-        # where the ray hits the object
-        intersection = ray.origin + (dis * ray.direction)
+    def get_color_from_ray(self, ray, lighting_func, remaining_reflects):
+        dis, obj, normal = ray.nearest_intersected_object(self.objects)
+        if dis is None:
+            return self.ambient
+        else:
+            # where the ray hits the object
+            intersection = ray.origin + (dis * ray.direction)
+            return lighting_func(obj, normal, intersection, ray, self, remaining_reflects)
 
-        diffuse = 0
-        specular = 0
+    def get_color_for_pixel(self, pixel, lighting_func, max_depth):
+        #print(self.get_ray_for_camera_pixel(pixel).direction)
+        #print(pixel)
+        return self.get_color_from_ray(self.get_ray_for_camera_pixel(pixel), lighting_func, max_depth)
 
-        for light in lights:
-            light_ray = light.get_light_ray(intersection)
-            # check that nothing occludes this light
-            visible = light_ray.reverse().nearest_intersected_object(objects) is None
-            if visible:
-                intensity = light.get_intensity(intersection)
-                diffuse += intensity * max(0, normal @ -light_ray.direction)
+    def render(self, lighting_func, max_depth):
+        image = np.zeros((self.resolution[1], self.resolution[0], 3))
 
-                reflect = reflected(light_ray.direction, normal)
-                specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
+        for i, y in enumerate(range(self.resolution[1])):
+            for j, x in enumerate(range(self.resolution[0])):
+                # We clip the values between 0 and 1 so all pixel values will make sense.
+                image[i, j] = np.clip(self.get_color_for_pixel([x,y], lighting_func, max_depth), 0, 1)
 
-        reflection = 0
-        refraction = 0
-        # do we have any remaining recursive raytraces?
-        if remaining_reflects > 0:
-            # save performance, if its not reflective dont bother calculating this
-            if obj.reflect > 0:
-                reflection = get_color_from_ray(reflect_ray(ray, normal), ambient, lights, objects,
-                                                remaining_reflects - 1)
-            if obj.trasparency > 0:
-                refraction = get_color_from_ray(refract_ray(ray, normal, obj.refraction_index), ambient, lights, obj, remaining_reflects - 1)
-
-        color = (obj.ambient * ambient) + (obj.diffuse * diffuse) \
-                + (obj.specular * specular) + (obj.reflect * reflection) + (obj.transparency * refraction)
+        return image
 
 
-def get_ray_for_camera_pixel(camera, width, height, pixel):
-    converted = 2 * ((pixel + 0.5) / np.array([width, height]))
-    return Ray(origin=[0, 0, 0], direction=normalize([converted[0] - 1, 1 - converted[1]]))
+def compute_recursive_colors(lighting_func, obj, normal, intersection, ray, scene, depth):
+    reflection = 0
+    refraction = 0
+    # do we have any remaining recursive raytraces?
+    if depth > 0:
+        # save performance, if its not reflective dont bother calculating this
+        if obj.reflection > 0:
+            reflection = scene.get_color_from_ray(ray.reflect(intersection, normal), lighting_func, depth - 1)
+        if obj.transparency > 0:
+            refraction = scene.get_color_from_ray(ray.refract(intersection, normal, obj.refraction_index), lighting_func,
+                                                  depth - 1)
+    return reflection, refraction
+
+
+def compute_final_color(obj, coefficients):
+    return np.dot(coefficients, [obj.ambient, obj.diffuse, obj.specular, obj.reflection, obj.transparency])
+
+
+def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
+    diffuse = 0
+    specular = 0
+
+    for light in scene.lights:
+        light_ray = light.get_light_ray(intersection)
+        # check that nothing occludes this light
+        visible = light_ray.nearest_intersected_object(scene.objects)[0] is None
+        if visible:
+            intensity = light.get_intensity(intersection)
+            diffuse += intensity * max(0, normal @ light_ray.direction)
+
+            reflect = reflected(light_ray.direction, normal)
+            specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
+
+    reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects)
+
+    return compute_final_color(obj, [scene.ambient, diffuse, specular, reflection, refraction])
 
 
 def render_scene(camera, ambient, lights, objects, screen_size, max_depth):
-    width, height = screen_size
-    ratio = float(width) / height
-    screen = (-1, 1 / ratio, 1, -1 / ratio)  # left, top, right, bottom
+    scene = Scene(camera, ambient, lights, objects, screen_size)
 
-    image = np.zeros((height, width, 3))
+    return scene.render(phong_lighting, max_depth)
 
-    for i, y in enumerate(range(height)):
-        for j, x in enumerate(range(width)):
-            ray = get_ray_for_camera_pixel(camera, width, height, np.array([x, y]))
-            # We clip the values between 0 and 1 so all pixel values will make sense.
-            image[i, j] = np.clip(get_color_from_ray(ray, ambient, lights, objects, max_depth), 0, 1)
 
-    return image
+def load_obj(path):
+    vertices = []
+    faces = []
+    for line in open(path, 'r'):
+        if line.startswith("v "):
+            vertices.append(line.split(' ')[1:4])
+        elif line.startswith("f "):
+            faces.append([value.split('/')[0] - 1 for value in line.split(' ')[1:4]])
+
+    return Mesh(vertices, faces)
 
 
 # Write your own objects and lights

@@ -1,15 +1,18 @@
 import numpy as np
-
+import math
 
 # This function gets a vector and returns its normalized form.
 def normalize(vector):
     return vector / np.linalg.norm(vector)
 
-
 # This function gets a vector and the normal of the surface it hit
 # This function returns the vector that reflects from the surface
 def reflected(vector, normal):
     return vector - (2 * (vector @ normal) * normal)
+
+# we add a little bit of bias to make the intersection "above" the surface when we reflect and refract
+# otherwise it may immediately intersect with the object it came from
+BIAS = 1e-4
 
 ## Lights
 
@@ -93,25 +96,34 @@ class Ray:
     # The function is getting the collection of objects in the scene and looks for the one with minimum distance.
     # The function returns the distance, object, and normal of the closest intersected object, or None if none found
     def nearest_intersected_object(self, objects):
-        intersections = map(lambda obj: obj.intersect(self), objects)
+        intersections = list(map((lambda obj: obj.intersect(self)), objects))
         # create array of distance of each object
         distances = [intersection[0] if intersection is not None else np.inf for intersection in intersections]
         # find closest intersection points
         closest_distance_idx = np.argmin(distances)
         if distances[closest_distance_idx] >= np.inf:
-            return None
+            return None, None, None
         return intersections[closest_distance_idx]
 
     # Reverses the direction of this ray
     def reverse(self):
         return Ray(self.origin, -self.direction)
 
+    def reflect(self, intersection, normal):
+        return Ray(intersection + (normal * BIAS), reflected(self.direction, normal))
+
+    def refract(self, intersection, normal, refract_index):
+        cosi = -(normal @ self.direction)
+        k = 1 - refract_index * refract_index * (1 - cosi * cosi)
+        return Ray(intersection - (normal * BIAS),
+                   normalize(self.direction * refract_index + normal * (refract_index * cosi - math.sqrt(k))))
+
 class Object3D:
 
     def set_material(self, ambient, diffuse, specular, shininess, reflection, transparency=0, refraction_index=1):
         self.ambient = ambient
-        self.diffuse = diffuse
-        self.specular = specular
+        self.diffuse = np.array(diffuse)
+        self.specular = np.array(specular)
         self.shininess = shininess
         self.reflection = reflection
         self.transparency = transparency
@@ -125,7 +137,11 @@ class Plane(Object3D):
 
     def intersect(self, ray: Ray):
         v = self.point - ray.origin
-        t = (np.dot(v, self.normal) / np.dot(self.normal, ray.direction))
+        angle = np.dot(self.normal, ray.direction)
+        # parallel to the plane
+        if angle == 0:
+            return None
+        t = (np.dot(v, self.normal) / angle)
         if t > 0:
             return t, self, self.normal
         else:
@@ -187,7 +203,7 @@ class Mesh(Object3D):
         self.triangle_list = self.create_triangle_list()
 
     def create_triangle_list(self):
-        return [Triangle(face[0], face[1], face[2]) for face in self.f_list]
+        return [Triangle(self.v_list[face[0]], self.v_list[face[1]], self.v_list[face[2]]) for face in self.f_list]
 
     def apply_materials_to_triangles(self):
         for t in self.triangle_list:
