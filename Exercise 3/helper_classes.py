@@ -31,7 +31,7 @@ class DirectionalLight(LightSource):
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection_point):
-        return np.linalg.norm(intersection - self.position)
+        return Ray(intersection_point, -self.direction)
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
