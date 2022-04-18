@@ -36,12 +36,11 @@ class DirectionalLight(LightSource):
 
     # This function returns the distance from a point to the light source
     def get_distance_from_light(self, intersection):
-        return np.linalg.norm(intersection - self.position)
+        return float('inf')
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
-        #TODO
-        pass
+        return self.intensity 
 
 
 class PointLight(LightSource):
@@ -70,22 +69,27 @@ class PointLight(LightSource):
 class SpotLight(LightSource):
 
 
-    def __init__(self, intensity):
+    def __init__(self, intensity, position, kc, kl, kq):
         super().__init__(intensity)
-        # TODO
+        self.kc = kc
+        self.kl = kl
+        self.kq = kq
+        self.position = np.array(position)
 
     # This function returns the ray that goes from the light source to a point
     def get_light_ray(self,intersection):
-        # TODO
-        return Ray()
+        return Ray(intersection,normalize(self.position - intersection))
 
     def get_distance_from_light(self,intersection):
-        #TODO
-        pass
-
+        return np.linalg.norm(intersection - self.position)
+    
     def get_intensity(self, intersection):
-        #TODO
-        pass
+        v = np.linalg.norm(intersection - self.position)
+        v_tag = v / abs(v)
+        d = self.get_distance_from_light(intersection)
+        direction = -d
+        direction_tag = np.linalg.norm(direction)
+        return (self.intensity * direction_tag * v_tag) / (self.kc + self.kl*d + self.kq * (d**2))
 
 
 class Ray:
@@ -147,7 +151,6 @@ class Plane(Object3D):
         else:
             return None
 
-# Ilana
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
     def __init__(self, a, b, c):
@@ -175,7 +178,6 @@ class Triangle(Object3D):
 
         return e.dot(v) / det, self, self.normal
 
-# Ilana
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
         self.center = center
