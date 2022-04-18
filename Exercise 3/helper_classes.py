@@ -98,13 +98,8 @@ class Ray:
     # The function returns the distance, object, and normal of the closest intersected object, or None if none found
     def nearest_intersected_object(self, objects):
         intersections = list(map((lambda obj: obj.intersect(self)), objects))
-        # create array of distance of each object
-        distances = [intersection[0] if intersection is not None else np.inf for intersection in intersections]
         # find closest intersection points
-        closest_distance_idx = np.argmin(distances)
-        if distances[closest_distance_idx] >= np.inf:
-            return None, None, None
-        return intersections[closest_distance_idx]
+        return intersections[min(range(len(intersections)), key=lambda i: intersections[i][0])]
 
     # Reverses the direction of this ray
     def reverse(self):
@@ -141,12 +136,12 @@ class Plane(Object3D):
         angle = np.dot(self.normal, ray.direction)
         # parallel to the plane
         if angle == 0:
-            return None
+            return math.inf
         t = (np.dot(v, self.normal) / angle)
         if t > 0:
             return t, self, self.normal
         else:
-            return None
+            return math.inf, self, self.normal
 
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
@@ -163,12 +158,11 @@ class Triangle(Object3D):
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
         # How do I name this idek
-        plane = Plane(self.normal, self.a)
-        inter = plane.intersect(ray)
-        if inter is None:
-            return None
+        distance = Plane(self.normal, self.a).intersect(ray)[0]
+        if distance >= math.inf:
+            return math.inf, self, self.normal
         else:
-            plane_intersect = ray.origin + inter[0] * ray.direction
+            plane_intersect = ray.origin + distance * ray.direction
             a = plane_intersect - self.a
             b = plane_intersect - self.b
             c = plane_intersect - self.c
@@ -178,9 +172,9 @@ class Triangle(Object3D):
             double_area = np.cross(self.b - self.a, self.c - self.a)
             gamma = 1 - i - j
             if ((0 <= i <= 1) and (0 <= j <= 1) and (0<=gamma<=1) and (.9999 <= i + j +gamma <= 1)):
-                return plane_intersect, self, self.normal
+                return distance, self, self.normal
             else:
-                return None
+                return math.inf, self, self.normal
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
@@ -188,16 +182,17 @@ class Sphere(Object3D):
         self.radius = radius
 
     def intersect(self, ray: Ray):
+        normal = ray.origin - self.center
         # quadratic equation time
-        b = 2 * np.dot(ray.direction, ray.origin - self.center)
-        c = np.linalg.norm(ray.origin - self.center) ** 2 - self.radius ** 2
+        b = 2 * np.dot(ray.direction, normal)
+        c = np.linalg.norm(normal) ** 2 - self.radius ** 2
         delta = b ** 2 - 4 * c
         if delta > 0:
             plus = (-b + np.sqrt(delta)) / 2
             minus = (-b - np.sqrt(delta)) / 2
             if plus > 0 and minus > 0:
-                return min(plus, minus), self, normalize(ray.origin - self.center)
-        return None
+                return min(plus, minus), self, normalize(normal)
+        return math.inf, self, normalize(normal)
 
 
 class Mesh(Object3D):

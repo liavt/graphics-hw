@@ -16,13 +16,11 @@ class Scene:
         self.objects = objects
 
     def get_ray_for_camera_pixel(self, pixel):
-        return Ray(self.camera, -self.camera +
-                   (1 / self.resolution[0]) * (((pixel[0] - math.floor(self.resolution[0] / 2)) * self.v_right) - (
-                           (pixel[1] - math.floor(self.resolution[1] / 2)) * self.v_up_hat)))
+        return Ray(self.camera, normalize(pixel - self.camera))
 
     def get_color_from_ray(self, ray, lighting_func, remaining_reflects):
         dis, obj, normal = ray.nearest_intersected_object(self.objects)
-        if dis is None:
+        if dis >= math.inf:
             return self.ambient
         else:
             # where the ray hits the object
@@ -30,8 +28,6 @@ class Scene:
             return lighting_func(obj, normal, intersection, ray, self, remaining_reflects)
 
     def get_color_for_pixel(self, pixel, lighting_func, max_depth):
-        #print(self.get_ray_for_camera_pixel(pixel).direction)
-        #print(pixel)
         return self.get_color_from_ray(self.get_ray_for_camera_pixel(pixel), lighting_func, max_depth)
 
     def render(self, lighting_func, max_depth):
@@ -45,7 +41,7 @@ class Scene:
             for j, x in enumerate(np.linspace(screen[0], screen[2], width)):
                 pixel = np.array([x, y, 0])
                 # We clip the values between 0 and 1 so all pixel values will make sense.
-                image[i, j] = np.clip(self.get_color_from_ray(Ray(self.camera, normalize(pixel - self.camera)), lighting_func, max_depth), 0, 1)
+                image[i, j] = np.clip(self.get_color_from_ray(self.get_ray_for_camera_pixel(pixel), lighting_func, max_depth), 0, 1)
 
         return image
 
@@ -77,7 +73,7 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
         # check that nothing occludes this light
         occluder = light_ray.nearest_intersected_object(scene.objects)
         # was there nothing in the way or was the occluding object "behind" the light
-        visible = occluder[0] is None or occluder[0] > light.get_distance_from_light(intersection)
+        visible = occluder[0] >= light.get_distance_from_light(intersection)
         if visible:
             intensity = light.get_intensity(intersection)
             diffuse += intensity * max(0, normal @ light_ray.direction)
@@ -86,11 +82,6 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
             specular += intensity * pow(max(0, reflect @ -ray.direction), obj.shininess)
 
     reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects - 1)
-
-    #diffuse = 0
-    #specular = 0
-    #reflection = 0
-    #refraction = 0
 
     return compute_final_color(obj, [scene.ambient, diffuse, specular, reflection, refraction])
 
