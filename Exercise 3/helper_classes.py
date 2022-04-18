@@ -159,7 +159,7 @@ class Triangle(Object3D):
         self.normal = self.compute_normal()
 
     def compute_normal(self):
-        return np.cross((self.b - self.a), (self.c - self.a))
+        return normalize(np.cross((self.b - self.a), (self.c - self.a)))
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
@@ -175,7 +175,18 @@ class Triangle(Object3D):
 
         v = np.cross(ray.origin - self.a, d)
 
-        return e.dot(v) / det, self, self.normal
+        return = e.dot(v) / det, self, self.normal
+
+    def barycentric(self, point):
+        a = self.a - point
+        b = self.b - point
+        c = self.c - point
+
+        area = np.dot(self.normal, np.cross(self.b - self.a, self.c - self.a)) / 2
+        gamma = 1 - (np.dot(self.normal, np.cross(b, c)) / (2 * area)) - (np.dot(self.normal, np.cross(c, a)) / (2 * area))
+        
+        results = [True if 0 <= x <= 1 else False for x in [alpha, beta, gamma]]
+        return all(results)
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
