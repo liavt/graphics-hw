@@ -76,12 +76,12 @@ class SpotLight(LightSource):
         self.direction = np.array(direction)
 
     # This function returns the ray that goes from the light source to a point
-    def get_light_ray(self,intersection):
-        return Ray(intersection,normalize(self.position - intersection))
+    def get_light_ray(self, intersection):
+        return Ray(intersection, normalize(self.position - intersection))
 
-    def get_distance_from_light(self,intersection):
+    def get_distance_from_light(self, intersection):
         return np.linalg.norm(intersection - self.position)
-    
+
     def get_intensity(self, intersection):
         big_v_tag = normalize(intersection - self.position)
         d = self.get_distance_from_light(intersection)
@@ -95,9 +95,9 @@ class Ray:
         self.direction = direction
 
     # The function is getting the collection of objects in the scene and looks for the one with minimum distance.
-    # The function returns the distance, object, and normal of the closest intersected object, or None if none found
+    # The function returns the distance, object, and normal of the closest intersected object, or math.inf if none found
     def nearest_intersected_object(self, objects):
-        intersections = np.array(list(map((lambda obj: obj.intersect(self)), objects)), dtype='object')
+        intersections = np.array([obj.intersect(self) for obj in objects], dtype='object')
         # find closest intersection points
         return intersections[np.argmin(intersections[:, 0])]
 
@@ -132,13 +132,12 @@ class Plane(Object3D):
         self.point = np.array(point)
 
     def intersect(self, ray: Ray):
-        v = self.point - ray.origin
         angle = np.dot(self.normal, ray.direction)
         # parallel to the plane
         if angle == 0:
-            return math.inf
-        t = (np.dot(v, self.normal) / angle)
-        if t > 0:
+            return math.inf, self, self.normal
+        t = (np.dot(self.point - ray.origin, self.normal) / angle)
+        if self.point - ray.origin > 0:
             return t, self, self.normal
         else:
             return math.inf, self, self.normal
@@ -150,11 +149,8 @@ class Triangle(Object3D):
         self.b = np.array(b)
         self.c = np.array(c)
         self.edge1 = self.b - self.a
-        self.edge2 = self.b - self.a
-        self.normal = self.compute_normal()
-
-    def compute_normal(self):
-        return np.cross((self.b - self.a), (self.c - self.a))
+        self.edge2 = self.c - self.a
+        self.normal = np.cross(self.edge1, self.edge2)
 
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
@@ -179,9 +175,6 @@ class Triangle(Object3D):
             return t, self, self.normal
         return math.inf, self, self.normal
 
-    def get_normal_at_point(self, pt):
-        return self.normal
-
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
         self.center = center
@@ -199,7 +192,7 @@ class Sphere(Object3D):
             if plus > 0 and minus > 0:
                 t = min(plus, minus)
                 return t, self, normalize((ray.origin + t * ray.direction) - self.center)
-        return math.inf, self, [0,0,0]
+        return math.inf, self, self.center
 
 
 class Mesh(Object3D):

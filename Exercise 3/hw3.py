@@ -1,8 +1,9 @@
+import numpy as np
+
 from helper_classes import *
 import math
 import itertools as it
-import matplotlib.pyplot as plt
-
+import numba
 
 # Contains information about a scene including camera light and objects
 class Scene:
@@ -21,15 +22,11 @@ class Scene:
 
     def get_color_from_ray(self, ray, lighting_func, remaining_reflects):
         dis, obj, normal = ray.nearest_intersected_object(self.objects)
-        if dis >= math.inf:
-            return self.ambient
+        if dis < 0 or dis >= math.inf:
+            return np.zeros(3)
         else:
             # where the ray hits the object
-            intersection = ray.origin + (dis * ray.direction)
-            return lighting_func(obj, normal, intersection, ray, self, remaining_reflects)
-
-    def get_color_for_pixel(self, pixel, lighting_func, max_depth):
-        return self.get_color_from_ray(self.get_ray_for_camera_pixel(pixel), lighting_func, max_depth)
+            return lighting_func((dis,obj,normal), ray, self, remaining_reflects)
 
     def render(self, lighting_func, max_depth):
         width, height = self.resolution
@@ -37,12 +34,18 @@ class Scene:
         screen = (-1, 1 / ratio, 1, -1 / ratio)  # left, top, right, bottom
 
         idx = it.product(np.linspace(screen[1], screen[3], height), np.linspace(screen[0], screen[2], width))
+        rays = [self.get_ray_for_camera_pixel([coords[1],coords[0],0]) for coords in idx]
+        intersections = np.array([[obj.intersect(ray) for obj in self.objects] for ray in rays], dtype='object')
+        found_objects_idx = np.argmin(intersections[:, :, 0], axis=1)
+
+        intersections = [intersections[i,found] for i,found in enumerate(found_objects_idx)]
+
         # do you consent
-        img = map(lambda coords: self.get_color_from_ray(self.get_ray_for_camera_pixel([coords[1],coords[0],0]), lighting_func, max_depth), idx)
+        img = np.apply_along_axis(lambda o: lighting_func(o[1], rays[o[0]], self, max_depth), 1, list(enumerate(intersections)))
 
         return np.clip(np.array(list(img)), 0, 1).reshape((height, width, 3))
 
-
+#numbajit
 def compute_recursive_colors(lighting_func, obj, normal, intersection, ray, scene, depth):
     reflection = 0
     refraction = 0
@@ -59,8 +62,10 @@ def compute_recursive_colors(lighting_func, obj, normal, intersection, ray, scen
 def compute_final_color(obj, coefficients):
     return np.dot(coefficients, np.array([obj.ambient, obj.diffuse, obj.specular, obj.reflection, obj.transparency], dtype='object'))
 
+def phong_lighting(intersection_info, ray, scene, remaining_reflects):
+    (dis,obj,normal) = intersection_info
+    intersection = ray.origin + dis * ray.direction
 
-def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
     diffuse = 0
     specular = 0
 
@@ -82,10 +87,10 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
         visible = occluder[0] >= light.get_distance_from_light(intersection)
         if visible:
             intensity = light.get_intensity(intersection)
-            diffuse += intensity * (normal @ light_ray.direction)
+            diffuse += intensity * max(0, normal @ light_ray.direction)
 
             reflect = normalize(reflected(light_ray.direction, normal))
-            specular += intensity * pow(reflect @ -ray.direction, obj.shininess)
+            specular += intensity * np.power(max(0, reflect @ ray.direction), obj.shininess)
 
     reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects - 1)
 
