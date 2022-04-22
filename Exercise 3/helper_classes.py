@@ -125,6 +125,10 @@ class Object3D:
         self.transparency = transparency
         self.refraction_index = refraction_index
 
+    # coefficients used for phong lighting
+    def get_coefficients(self):
+        return [self.ambient, self.diffuse, self.specular, self.reflection, self.transparency]
+
 
 class Plane(Object3D):
     def __init__(self, normal, point):
@@ -137,7 +141,7 @@ class Plane(Object3D):
         if angle == 0:
             return math.inf, self, self.normal
         t = (np.dot(self.point - ray.origin, self.normal) / angle)
-        if self.point - ray.origin > 0:
+        if t > 0:
             return t, self, self.normal
         else:
             return math.inf, self, self.normal
