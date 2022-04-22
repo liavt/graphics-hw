@@ -50,10 +50,9 @@ def compute_recursive_colors(lighting_func, obj, normal, intersection, ray, scen
     if depth > 0:
         # save performance, if its not reflective dont bother calculating this
         if obj.reflection > 0:
-            reflection = scene.get_color_from_ray(ray.reflect(intersection, normal), lighting_func, depth - 1)
+            reflection = scene.get_color_from_ray(ray.reflect(intersection, normal), lighting_func, depth)
         if obj.transparency > 0:
-            refraction = scene.get_color_from_ray(ray.refract(intersection, normal, obj.refraction_index), lighting_func,
-                                                  depth - 1)
+            refraction = scene.get_color_from_ray(ray.refract(intersection, normal, obj.refraction_index), lighting_func, depth)
     return reflection, refraction
 
 
@@ -85,7 +84,7 @@ def phong_lighting(obj, normal, intersection, ray, scene, remaining_reflects):
             intensity = light.get_intensity(intersection)
             diffuse += intensity * (normal @ light_ray.direction)
 
-            reflect = reflected(-light_ray.direction, normal)
+            reflect = normalize(reflected(light_ray.direction, normal))
             specular += intensity * pow(reflect @ -ray.direction, obj.shininess)
 
     reflection, refraction = compute_recursive_colors(phong_lighting, obj, normal, intersection, ray, scene, remaining_reflects - 1)

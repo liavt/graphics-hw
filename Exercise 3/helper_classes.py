@@ -10,10 +10,6 @@ def normalize(vector):
 def reflected(vector, normal):
     return vector - (2 * (vector @ normal) * normal)
 
-
-def triangle_area(A, B, C):
-    return np.linalg.norm(np.cross(B - A, C - A)) / 2
-
 # we add a little bit of bias to make the intersection "above" the surface when we reflect and refract
 # otherwise it may immediately intersect with the object it came from
 BIAS = 1e-4
@@ -101,9 +97,9 @@ class Ray:
     # The function is getting the collection of objects in the scene and looks for the one with minimum distance.
     # The function returns the distance, object, and normal of the closest intersected object, or None if none found
     def nearest_intersected_object(self, objects):
-        intersections = list(map((lambda obj: obj.intersect(self)), objects))
+        intersections = np.array(list(map((lambda obj: obj.intersect(self)), objects)), dtype='object')
         # find closest intersection points
-        return intersections[min(range(len(intersections)), key=lambda i: intersections[i][0])]
+        return intersections[np.argmin(intersections[:, 0])]
 
     # Reverses the direction of this ray
     def reverse(self):
@@ -153,6 +149,8 @@ class Triangle(Object3D):
         self.a = np.array(a)
         self.b = np.array(b)
         self.c = np.array(c)
+        self.edge1 = self.b - self.a
+        self.edge2 = self.b - self.a
         self.normal = self.compute_normal()
 
     def compute_normal(self):
@@ -161,19 +159,28 @@ class Triangle(Object3D):
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
-        # How do I name this idek
-        distance = Plane(self.normal, self.a).intersect(ray)[0]
-        if distance >= math.inf:
+        #moller trumbore algorithm
+        h = np.cross(ray.direction, self.edge2)
+        a = self.edge1 @ h
+        # we implement back-face culling, it works with the demo scenes and makes things faster
+        if abs(a) <= 0.0001:
             return math.inf, self, self.normal
-        else:
-            point = ray.origin + distance * ray.direction
-            if abs(triangle_area(self.a, self.b, self.c) -
-                    (triangle_area(self.a, self.b, point)
-                     + triangle_area(self.a, self.c, point)
-                     + triangle_area(self.b, self.c, point))) < 0.0001:
-                return distance, self, self.normal
-            else:
-                return math.inf, self, self.normal
+        f = 1.0 / a
+        s = ray.origin - self.a
+        u = f * (s @ h)
+        if u < 0 or u > 1:
+            return math.inf, self, self.normal
+        q = np.cross(s, self.edge1)
+        v = f * (ray.direction @ q)
+        if v < 0 or u + v > 1:
+            return math.inf, self, self.normal
+        t = f * (self.edge2 @ q)
+        if t > 0.0001:
+            return t, self, self.normal
+        return math.inf, self, self.normal
+
+    def get_normal_at_point(self, pt):
+        return self.normal
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
