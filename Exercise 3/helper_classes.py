@@ -1,9 +1,11 @@
 import numpy as np
 import math
+import numba
 
 # This function gets a vector and returns its normalized form.
 def normalize(vector):
     return vector / np.linalg.norm(vector)
+
 
 # This function gets a vector and the normal of the surface it hit
 # This function returns the vector that reflects from the surface
@@ -146,6 +148,52 @@ class Plane(Object3D):
         else:
             return math.inf, self, self.normal
 
+def find_intersection_of_triangles(ray, triangles):
+    triangles = np.array(triangles)
+    edge1 = np.array([tri.edge1 for tri in triangles])
+    edge2 = np.array([tri.edge2 for tri in triangles])
+    h = np.cross(np.tile(ray.direction, (triangles.shape[0], 1)), edge2)
+    dot_products = (edge1 * h).sum(axis = 1)
+
+    filter_idx = np.abs(dot_products) > 0.0001
+    triangles = triangles[filter_idx]
+    if len(triangles) <= 0:
+        return None, math.inf
+
+    dot_products = dot_products[filter_idx]
+    edge1 = edge1[filter_idx]
+    edge2 = edge2[filter_idx]
+    f = 1.0 / dot_products
+    s = np.tile(ray.origin, (triangles.shape[0], 1)) - [tri.a for tri in triangles]
+    u = f * ((s * h).sum(axis=1))
+
+    filter_idx = np.logical_and(u >= 0, u <= 1)
+    triangles = triangles[filter_idx]
+    if len(triangles) <= 0:
+        return None, math.inf
+    edge1 = edge1[filter_idx]
+    edge2 = edge2[filter_idx]
+    s = s[filter_idx]
+    f = f[filter_idx]
+    q = np.cross(s, edge1)
+    u = u[filter_idx]
+    v = f * ((np.tile(ray.direction, (triangles.shape[0], 1)) * q).sum(axis=1))
+
+    filter_idx = np.logical_and(v >= 0, u + v <= 1)
+    triangles = triangles[filter_idx]
+    if len(triangles) <= 0:
+        return None, math.inf
+    f = f[filter_idx]
+    edge2 = edge2[filter_idx]
+    q = q[filter_idx]
+    t = f * ((edge2 * q).sum(axis=1))
+
+    if len(t[t > 0.0001]) == 0:
+        return None, math.inf
+
+    found_idx = np.argmin(t[t > 0.0001])
+    return triangles[t > 0.0001][found_idx], t[found_idx]
+
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
     def __init__(self, a, b, c):
@@ -159,6 +207,7 @@ class Triangle(Object3D):
     # Hint: First find the intersection on the plane
     # Later, find if the point is in the triangle using barycentric coordinates
     def intersect(self, ray: Ray):
+        '''
         #moller trumbore algorithm
         h = np.cross(ray.direction, self.edge2)
         a = self.edge1 @ h
@@ -178,6 +227,11 @@ class Triangle(Object3D):
         if t > 0.0001:
             return t, self, self.normal
         return math.inf, self, self.normal
+        '''
+        obj,t = find_intersection_of_triangles(ray, [self])
+        if obj == self:
+            return t, self, self.normal
+        return math.inf, self, self.normal
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
@@ -189,12 +243,12 @@ class Sphere(Object3D):
         # quadratic equation time
         b = 2 * np.dot(ray.direction, normal)
         c = np.linalg.norm(normal) ** 2 - self.radius ** 2
-        delta = b ** 2 - 4 * c
+        delta = (b * b) - 4 * c
         if delta > 0:
-            plus = (-b + np.sqrt(delta)) / 2
-            minus = (-b - np.sqrt(delta)) / 2
-            if plus > 0 and minus > 0:
-                t = min(plus, minus)
+            plus = (-b + np.sqrt(delta))
+            minus = (-b - np.sqrt(delta))
+            if plus >= 0 and minus >= 0:
+                t = min(plus, minus) / 2
                 return t, self, normalize((ray.origin + t * ray.direction) - self.center)
         return math.inf, self, self.center
 
@@ -217,4 +271,7 @@ class Mesh(Object3D):
     # Hint: Intersect returns both distance and nearest object.
     # Keep track of both.
     def intersect(self, ray: Ray):
-        return ray.nearest_intersected_object(self.triangle_list)
+        obj, t = find_intersection_of_triangles(ray, self.triangle_list)
+        if obj == None:
+            return math.inf, self, [0,0,0]
+        return t, obj, obj.normal

@@ -31,14 +31,18 @@ class Scene:
     def get_colors_for_rays(self, rays, lighting_func, max_depth):
         intersections = np.array([[obj.intersect(ray) for obj in self.objects] for ray in rays], dtype='object')
         found_objects_idx = np.argmin(intersections[:, :, 0], axis=1)
+        print("intersections")
 
         intersections = np.array([intersections[i, found] for i, found in enumerate(found_objects_idx)], dtype='object')
+        print('processing')
 
         obj_coefficients = np.array(
             [np.array(obj.get_coefficients(), dtype='object') for
              obj in intersections[:, 1]], dtype='object')
+        print('coefficients')
         # do you consent
         img_coefficients = np.apply_along_axis(lambda o: lighting_func(o[0], o[1], self, max_depth), 1, list(zip(intersections, rays)))
+        print('img done')
         img = (img_coefficients * obj_coefficients)
         return [pix.sum() for pix in img]
 
@@ -47,8 +51,10 @@ class Scene:
         ratio = float(width) / height
         screen = (-1, 1 / ratio, 1, -1 / ratio)  # left, top, right, bottom
 
+        print("init")
         idx = it.product(np.linspace(screen[1], screen[3], height), np.linspace(screen[0], screen[2], width))
         rays = [self.get_ray_for_camera_pixel([coords[1],coords[0],0]) for coords in idx]
+        print("rays")
 
         return np.clip(self.get_colors_for_rays(rays, lighting_func, max_depth), 0, 1).reshape((height, width, 3))
 
@@ -121,9 +127,9 @@ def load_obj(path):
     faces = []
     for line in open(path, 'r'):
         if line.startswith("v "):
-            vertices.append(line.split(' ')[1:4])
+            vertices.append([float(value.strip()) for value in line.split(' ')[1:4]])
         elif line.startswith("f "):
-            faces.append([value.split('/')[0] - 1 for value in line.split(' ')[1:4]])
+            faces.append([int(value.strip().split('/')[0]) - 1 for value in line.split(' ')[1:4]])
 
     return Mesh(vertices, faces)
 
