@@ -2,6 +2,7 @@ import numpy as np
 import math
 import numba
 
+
 # This function gets a vector and returns its normalized form.
 def normalize(vector):
     return vector / np.linalg.norm(vector)
@@ -12,9 +13,11 @@ def normalize(vector):
 def reflected(vector, normal):
     return vector - (2 * (vector @ normal) * normal)
 
+
 # we add a little bit of bias to make the intersection "above" the surface when we reflect and refract
 # otherwise it may immediately intersect with the object it came from
 BIAS = 1e-4
+
 
 ## Lights
 
@@ -32,7 +35,7 @@ class DirectionalLight(LightSource):
         self.direction = normalize(direction)
 
     # This function returns the ray that goes from the light source to a point
-    def get_light_ray(self,intersection_point):
+    def get_light_ray(self, intersection_point):
         return Ray(intersection_point, self.direction)
 
     # This function returns the distance from a point to the light source
@@ -41,7 +44,7 @@ class DirectionalLight(LightSource):
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
-        return self.intensity 
+        return self.intensity
 
 
 class PointLight(LightSource):
@@ -54,17 +57,17 @@ class PointLight(LightSource):
         self.kq = kq
 
     # This function returns the ray that goes from the light source to a point
-    def get_light_ray(self,intersection):
-        return Ray(intersection,normalize(self.position - intersection))
+    def get_light_ray(self, intersection):
+        return Ray(intersection, normalize(self.position - intersection))
 
     # This function returns the distance from a point to the light source
-    def get_distance_from_light(self,intersection):
+    def get_distance_from_light(self, intersection):
         return np.linalg.norm(intersection - self.position)
 
     # This function returns the light intensity at a point
     def get_intensity(self, intersection):
         d = self.get_distance_from_light(intersection)
-        return self.intensity / (self.kc + self.kl*d + self.kq * (d**2))
+        return self.intensity / (self.kc + self.kl * d + self.kq * (d ** 2))
 
 
 class SpotLight(LightSource):
@@ -87,8 +90,8 @@ class SpotLight(LightSource):
     def get_intensity(self, intersection):
         big_v_tag = normalize(intersection - self.position)
         d = self.get_distance_from_light(intersection)
-        direction = -(self.direction/ np.linalg.norm(self.direction))
-        return (self.intensity * np.dot(big_v_tag, direction)) / (self.kc + self.kl*d + self.kq * (d**2))
+        direction = -(self.direction / np.linalg.norm(self.direction))
+        return (self.intensity * np.dot(big_v_tag, direction)) / (self.kc + self.kl * d + self.kq * (d ** 2))
 
 
 class Ray:
@@ -116,9 +119,13 @@ class Ray:
         return Ray(intersection - (normal * BIAS),
                    normalize(self.direction * refract_index + normal * (refract_index * cosi - math.sqrt(k))))
 
-class Object3D:
 
-    def set_material(self, ambient, diffuse, specular, shininess, reflection, transparency=0, refraction_index=1):
+class Object3D:
+    # occluders can cast shadow, non occluders cant
+    def set_occluder(self, val):
+        self.occluder = val
+
+    def set_material(self, ambient, diffuse, specular, shininess, reflection, emission=np.array([0,0,0]), transparency=0, refraction_index=1):
         self.ambient = ambient
         self.diffuse = np.array(diffuse)
         self.specular = np.array(specular)
@@ -126,10 +133,12 @@ class Object3D:
         self.reflection = reflection
         self.transparency = transparency
         self.refraction_index = refraction_index
+        self.emission = emission
+        self.occluder = True
 
     # coefficients used for phong lighting
     def get_coefficients(self):
-        return [self.ambient, self.diffuse, self.specular, self.reflection, self.transparency]
+        return [self.emission, self.ambient, self.diffuse, self.specular, self.reflection, self.transparency]
 
 
 class Plane(Object3D):
@@ -148,12 +157,13 @@ class Plane(Object3D):
         else:
             return math.inf, self, self.normal
 
+
 def find_intersection_of_triangles(ray, triangles):
     triangles = np.array(triangles)
     edge1 = np.array([tri.edge1 for tri in triangles])
     edge2 = np.array([tri.edge2 for tri in triangles])
     h = np.cross(np.tile(ray.direction, (triangles.shape[0], 1)), edge2)
-    dot_products = (edge1 * h).sum(axis = 1)
+    dot_products = (edge1 * h).sum(axis=1)
 
     filter_idx = np.abs(dot_products) > 0.0001
     triangles = triangles[filter_idx]
@@ -163,6 +173,7 @@ def find_intersection_of_triangles(ray, triangles):
     dot_products = dot_products[filter_idx]
     edge1 = edge1[filter_idx]
     edge2 = edge2[filter_idx]
+    h = h[filter_idx]
     f = 1.0 / dot_products
     s = np.tile(ray.origin, (triangles.shape[0], 1)) - [tri.a for tri in triangles]
     u = f * ((s * h).sum(axis=1))
@@ -193,6 +204,7 @@ def find_intersection_of_triangles(ray, triangles):
 
     found_idx = np.argmin(t[t > 0.0001])
     return triangles[t > 0.0001][found_idx], t[found_idx]
+
 
 class Triangle(Object3D):
     # Triangle gets 3 points as arguments
@@ -228,10 +240,11 @@ class Triangle(Object3D):
             return t, self, self.normal
         return math.inf, self, self.normal
         '''
-        obj,t = find_intersection_of_triangles(ray, [self])
+        obj, t = find_intersection_of_triangles(ray, [self])
         if obj == self:
             return t, self, self.normal
         return math.inf, self, self.normal
+
 
 class Sphere(Object3D):
     def __init__(self, center, radius: float):
@@ -266,12 +279,12 @@ class Mesh(Object3D):
 
     def apply_materials_to_triangles(self):
         for t in self.triangle_list:
-            t.set_material(self.ambient,self.diffuse,self.specular,self.shininess,self.reflection)
+            t.set_material(self.ambient, self.diffuse, self.specular, self.shininess, self.reflection, self.emission, self.transparency, self.refraction_index)
 
     # Hint: Intersect returns both distance and nearest object.
     # Keep track of both.
     def intersect(self, ray: Ray):
         obj, t = find_intersection_of_triangles(ray, self.triangle_list)
         if obj == None:
-            return math.inf, self, [0,0,0]
+            return math.inf, self, [0, 0, 0]
         return t, obj, obj.normal
