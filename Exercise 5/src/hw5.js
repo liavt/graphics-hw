@@ -17,15 +17,52 @@ function degrees_to_radians(degrees)
 // Add here the rendering of your spaceship
 
 // This is a sample box.
-const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshBasicMaterial( {color: 0xaaaaaa} );
-const cube = new THREE.Mesh( geometry, material );
-scene.add( cube );
+const hullGeometry = new THREE.CylinderGeometry( 1, 1, 3, 30 );
+const hullMaterial = new THREE.MeshPhongMaterial( {color: 0xaaaaaa} );
+const hull = new THREE.Mesh( hullGeometry, hullMaterial );
+const hullTranslate = new THREE.Matrix4();
+hullTranslate.makeTranslation(-35,0,0);
+hull.applyMatrix4(hullTranslate);
+
+const headGeometry = new THREE.ConeGeometry(1, 1, 30);
+const headMaterial = new THREE.MeshPhongMaterial( {color: 0xaa0000} );
+const head = new THREE.Mesh( headGeometry, headMaterial );
+const headTranslate = new THREE.Matrix4();
+headTranslate.makeTranslation(0,2,0);
+head.applyMatrix4(headTranslate);
+hull.add( head )
+
+// make it 2.99 instead of 3 to prevent z fighting at the bottom
+const wingsGeometry = new THREE.ConeGeometry(1.5, 2.99, 3)
+const wingsMaterial =  new THREE.MeshPhongMaterial( {color: 0xaa0000} );
+const wings = new THREE.Mesh( wingsGeometry, wingsMaterial );
+hull.add( wings );
+
+const windowsGeometry = new THREE.CylinderGeometry( 0.4, 0.4, 2, 30 );
+const windowsMaterial = new THREE.MeshPhongMaterial( {color: 0x000099} );
+const windows = new THREE.Mesh( windowsGeometry, windowsMaterial );
+const windowRotation = new THREE.Matrix4();
+windowRotation.makeRotationZ(degrees_to_radians(90));
+windows.applyMatrix4(windowRotation);
+hull.add( windows );
+
+
+const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
+const planetMaterial = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+const planet = new THREE.Mesh( planetGeometry, planetMaterial );
+const planetTranslate = new THREE.Matrix4();
+planetTranslate.makeTranslation(30,-15,10);
+planet.applyMatrix4(planetTranslate);
+scene.add(planet);
+
+planet.add(hull);
+
+scene.add( new THREE.AmbientLight( 0xffffff))
 
 
 // This defines the initial distance of the camera
 const cameraTranslate = new THREE.Matrix4();
-cameraTranslate.makeTranslation(0,0,5);
+cameraTranslate.makeTranslation(0,20,0);
 camera.applyMatrix4(cameraTranslate)
 
 renderer.render( scene, camera );
@@ -33,11 +70,27 @@ renderer.render( scene, camera );
 const controls = new OrbitControls( camera, renderer.domElement );
 
 let isOrbitEnabled = true;
+let wireframeMode = false;
+let animation1 = false;
+let animation2 = false;
+let animation3 = false;
 
 const toggleOrbit = (e) => {
-	if (e.key == "o"){
+	if (e.key === "o"){
 		isOrbitEnabled = !isOrbitEnabled;
 	}
+  if (e.key === "w") {
+    wireframeMode = !wireframeMode;
+  }
+  if (e.key === "1") {
+    animation1 = !animation1;
+  }
+  if (e.key === "2") {
+    animation2 = !animation2;
+  }
+  if (e.key === "3") {
+    animation3 = !animation3;
+  }
 }
 
 document.addEventListener('keydown',toggleOrbit)
@@ -49,8 +102,33 @@ function animate() {
 
 	requestAnimationFrame( animate );
 
+  scene.traverse((obj)=>{
+    if (obj["material"]) {
+      obj.material.wireframe = wireframeMode
+    }
+  });
+
 	controls.enabled = isOrbitEnabled;
 	controls.update();
+
+  const originalMatrix = planet.matrixWorld.clone();
+  planet.applyMatrix4(planet.matrixWorld.invert());
+  if (animation1) {
+    const animationRotation = new THREE.Matrix4();
+    animationRotation.makeRotationZ(-0.001);
+    planet.applyMatrix4(animationRotation);
+  }
+  if (animation2) {
+    const animationRotation = new THREE.Matrix4();
+    animationRotation.makeRotationY(-0.001);
+    planet.applyMatrix4(animationRotation);
+  }
+  if (animation3) {
+    const animationTranslation = new THREE.Matrix4();
+    animationTranslation.makeTranslation(-0.01,0,0);
+    hull.applyMatrix4(animationTranslation);
+  }
+  planet.applyMatrix4(originalMatrix);
 
 	renderer.render( scene, camera );
 
