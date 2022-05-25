@@ -57,6 +57,30 @@ scene.add(planet);
 
 planet.add(hull);
 
+const starGeometry = new THREE.BufferGeometry();
+const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
+const starVertices = []
+for (let i =0, i < 10000; i++){
+  const x = (Math.random() -.5) *2000
+  const y = (Math.random() -.5) *2000
+  const z = -Math.random() *2000
+  starVertices.push(x,y,z)
+}
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
+const stars = new THREE.Points(starGeometry, starMaterial);
+scene.add(stars);
+
+const eyeGeometry = new THREE.SphereGeometry();
+const eyeMaterial = new THREE.MeshPhongMaterial( {color: 0xffffff});
+const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+const eyeTranslate = new THREE.Matrix4();
+eyeTranslate.makeTranslation();
+eye.applyMatrix4(eyeTranslate);
+scene.add(eye)
+
+const irisGeometry = new THREE.SphereGeometry();
+
+
 scene.add( new THREE.AmbientLight( 0xffffff))
 
 
