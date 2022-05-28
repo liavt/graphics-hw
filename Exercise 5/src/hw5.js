@@ -32,6 +32,38 @@ headTranslate.makeTranslation(0,2,0);
 head.applyMatrix4(headTranslate);
 hull.add( head )
 
+const exhaust = new THREE.Mesh( new THREE.ConeGeometry(0.7, 0.7, 20), new THREE.MeshPhongMaterial( {color: 0x333333 } ) );
+const exhaustTranslate = new THREE.Matrix4();
+exhaustTranslate.makeTranslation(0,-1.5,0);
+exhaust.applyMatrix4(exhaustTranslate);
+hull.add( exhaust );
+
+const flame = new THREE.Mesh( new THREE.ConeGeometry(0.7, 1.2, 20), new THREE.MeshPhongMaterial( {color: 0xee2222, transparent: true, opacity: 0.7 } ) );
+{
+  const flameRotate = new THREE.Matrix4();
+  flameRotate.makeRotationZ(degrees_to_radians(180));
+  flame.applyMatrix4(flameRotate);
+}
+{
+  const flameTranslate = new THREE.Matrix4();
+  flameTranslate.makeTranslation(0,-2.45,0);
+  flame.applyMatrix4(flameTranslate);
+}
+hull.add( flame );
+
+const flame2 = new THREE.Mesh( new THREE.ConeGeometry(0.3, 0.4, 20), new THREE.MeshPhongMaterial( {color: 0xfc6b03, transparent: true, opacity: 0.7 } ) );
+{
+  const flame2Rotate = new THREE.Matrix4();
+  flame2Rotate.makeRotationZ(degrees_to_radians(180));
+  flame2.applyMatrix4(flame2Rotate);
+}
+{
+  const flame2Translate = new THREE.Matrix4();
+  flame2Translate.makeTranslation(0,-2,0);
+  flame2.applyMatrix4(flame2Translate);
+}
+hull.add( flame2 );
+
 // make it 2.99 instead of 3 to prevent z fighting at the bottom
 const wingsGeometry = new THREE.ConeGeometry(1.5, 2.99, 3)
 const wingsMaterial =  new THREE.MeshPhongMaterial( {color: 0xaa0000} );
@@ -58,12 +90,12 @@ scene.add(planet);
 planet.add(hull);
 
 const starGeometry = new THREE.BufferGeometry();
-const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
+const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size:0.1, sizeAttenuation: false})
 const starVertices = []
-for (let i =0, i < 10000; i++){
+for (let i =0; i < 10000; i++){
   const x = (Math.random() -.5) *2000
   const y = (Math.random() -.5) *2000
-  const z = -Math.random() *2000
+  const z = (Math.random() -.5) *2000
   starVertices.push(x,y,z)
 }
 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
@@ -153,6 +185,9 @@ function animate() {
     hull.applyMatrix4(animationTranslation);
   }
   planet.applyMatrix4(originalMatrix);
+
+  flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
+  flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
 
 	renderer.render( scene, camera );
 
