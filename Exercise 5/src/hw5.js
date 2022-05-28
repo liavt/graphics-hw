@@ -79,7 +79,7 @@ windows.applyMatrix4(windowRotation);
 hull.add( windows );
 
 const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
-const planetMaterial = new THREE.MeshPhongMaterial({color: 0x33cc33})
+const planetMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
 //planetMaterial.map = THREE.ImageUtils.loadTexture('https://eoimages.gsfc.nasa.gov/images/imagerecords/4000/4702/aster_volcanoes_artII_lrg.jpg');
 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 const planetTranslate = new THREE.Matrix4();
