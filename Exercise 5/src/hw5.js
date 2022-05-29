@@ -80,6 +80,10 @@ hull.add( windows );
 
 const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
 const planetMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
+<<<<<<< HEAD
+=======
+//planetMaterial.map = THREE.ImageUtils.loadTexture('https://eoimages.gsfc.nasa.gov/images/imagerecords/4000/4702/aster_volcanoes_artII_lrg.jpg');
+>>>>>>> d752bcb83ac0ca3e8238c2ccc08e30266f71eedb
 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 const planetTranslate = new THREE.Matrix4();
 planetTranslate.makeTranslation(30,-15,10);
