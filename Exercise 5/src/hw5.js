@@ -10,8 +10,8 @@ document.body.appendChild( renderer.domElement );
 
 function degrees_to_radians(degrees)
 {
-  var pi = Math.PI;
-  return degrees * (pi/180);
+    var pi = Math.PI;
+    return degrees * (pi/180);
 }
 
 // Add here the rendering of your spaceship
@@ -40,27 +40,27 @@ hull.add( exhaust );
 
 const flame = new THREE.Mesh( new THREE.ConeGeometry(0.7, 1.2, 20), new THREE.MeshPhongMaterial( {color: 0xee2222, transparent: true, opacity: 0.7 } ) );
 {
-  const flameRotate = new THREE.Matrix4();
-  flameRotate.makeRotationZ(degrees_to_radians(180));
-  flame.applyMatrix4(flameRotate);
+    const flameRotate = new THREE.Matrix4();
+    flameRotate.makeRotationZ(degrees_to_radians(180));
+    flame.applyMatrix4(flameRotate);
 }
 {
-  const flameTranslate = new THREE.Matrix4();
-  flameTranslate.makeTranslation(0,-2.45,0);
-  flame.applyMatrix4(flameTranslate);
+    const flameTranslate = new THREE.Matrix4();
+    flameTranslate.makeTranslation(0,-2.45,0);
+    flame.applyMatrix4(flameTranslate);
 }
 hull.add( flame );
 
 const flame2 = new THREE.Mesh( new THREE.ConeGeometry(0.3, 0.4, 20), new THREE.MeshPhongMaterial( {color: 0xfc6b03, transparent: true, opacity: 0.7 } ) );
 {
-  const flame2Rotate = new THREE.Matrix4();
-  flame2Rotate.makeRotationZ(degrees_to_radians(180));
-  flame2.applyMatrix4(flame2Rotate);
+    const flame2Rotate = new THREE.Matrix4();
+    flame2Rotate.makeRotationZ(degrees_to_radians(180));
+    flame2.applyMatrix4(flame2Rotate);
 }
 {
-  const flame2Translate = new THREE.Matrix4();
-  flame2Translate.makeTranslation(0,-2,0);
-  flame2.applyMatrix4(flame2Translate);
+    const flame2Translate = new THREE.Matrix4();
+    flame2Translate.makeTranslation(0,-2,0);
+    flame2.applyMatrix4(flame2Translate);
 }
 hull.add( flame2 );
 
@@ -80,10 +80,6 @@ hull.add( windows );
 
 const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
 const planetMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
-<<<<<<< HEAD
-=======
-//planetMaterial.map = THREE.ImageUtils.loadTexture('https://eoimages.gsfc.nasa.gov/images/imagerecords/4000/4702/aster_volcanoes_artII_lrg.jpg');
->>>>>>> d752bcb83ac0ca3e8238c2ccc08e30266f71eedb
 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 const planetTranslate = new THREE.Matrix4();
 planetTranslate.makeTranslation(30,-15,10);
@@ -199,10 +195,10 @@ const starGeometry = new THREE.BufferGeometry();
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size:0.1, sizeAttenuation: false})
 const starVertices = []
 for (let i =0; i < 10000; i++){
-  const x = (Math.random() -.5) *2000
-  const y = (Math.random() -.5) *2000
-  const z = (Math.random() -.5) *2000
-  starVertices.push(x,y,z)
+    const x = (Math.random() -.5) *2000
+    const y = (Math.random() -.5) *2000
+    const z = (Math.random() -.5) *2000
+    starVertices.push(x,y,z)
 }
 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
 const stars = new THREE.Points(starGeometry, starMaterial);
@@ -260,21 +256,21 @@ let animation2 = false;
 let animation3 = false;
 
 const toggleOrbit = (e) => {
-	if (e.key === "o"){
-		isOrbitEnabled = !isOrbitEnabled;
-	}
-  if (e.key === "w") {
-    wireframeMode = !wireframeMode;
-  }
-  if (e.key === "1") {
-    animation1 = !animation1;
-  }
-  if (e.key === "2") {
-    animation2 = !animation2;
-  }
-  if (e.key === "3") {
-    animation3 = !animation3;
-  }
+    if (e.key === "o"){
+        isOrbitEnabled = !isOrbitEnabled;
+    }
+    if (e.key === "w") {
+        wireframeMode = !wireframeMode;
+    }
+    if (e.key === "1") {
+        animation1 = !animation1;
+    }
+    if (e.key === "2") {
+        animation2 = !animation2;
+    }
+    if (e.key === "3") {
+        animation3 = !animation3;
+    }
 }
 
 document.addEventListener('keydown',toggleOrbit)
@@ -284,40 +280,40 @@ controls.update();
 
 function animate() {
 
-	requestAnimationFrame( animate );
+    requestAnimationFrame( animate );
 
-  scene.traverse((obj)=>{
-    if (obj["material"]) {
-      obj.material.wireframe = wireframeMode
+    scene.traverse((obj)=>{
+        if (obj["material"]) {
+            obj.material.wireframe = wireframeMode
+        }
+    });
+
+    controls.enabled = isOrbitEnabled;
+    controls.update();
+
+    const originalMatrix = planet.matrixWorld.clone();
+    planet.applyMatrix4(planet.matrixWorld.invert());
+    if (animation1) {
+        const animationRotation = new THREE.Matrix4();
+        animationRotation.makeRotationZ(-0.001);
+        hull.applyMatrix4(animationRotation);
     }
-  });
+    if (animation2) {
+        const animationRotation = new THREE.Matrix4();
+        animationRotation.makeRotationY(-0.001);
+        hull.applyMatrix4(animationRotation);
+    }
+    if (animation3) {
+        const animationTranslation = new THREE.Matrix4();
+        animationTranslation.makeTranslation(-0.01,0,0);
+        hull.applyMatrix4(animationTranslation);
+    }
+    planet.applyMatrix4(originalMatrix);
 
-	controls.enabled = isOrbitEnabled;
-	controls.update();
+    flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
+    flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
 
-  const originalMatrix = planet.matrixWorld.clone();
-  planet.applyMatrix4(planet.matrixWorld.invert());
-  if (animation1) {
-    const animationRotation = new THREE.Matrix4();
-    animationRotation.makeRotationZ(-0.001);
-    hull.applyMatrix4(animationRotation);
-  }
-  if (animation2) {
-    const animationRotation = new THREE.Matrix4();
-    animationRotation.makeRotationY(-0.001);
-    hull.applyMatrix4(animationRotation);
-  }
-  if (animation3) {
-    const animationTranslation = new THREE.Matrix4();
-    animationTranslation.makeTranslation(-0.01,0,0);
-    hull.applyMatrix4(animationTranslation);
-  }
-  planet.applyMatrix4(originalMatrix);
-
-  flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
-  flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
-
-	renderer.render( scene, camera );
+    renderer.render( scene, camera );
 
 }
 animate()
