@@ -8,7 +8,6 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-
 function degrees_to_radians(degrees) {
     var pi = Math.PI;
     return degrees * (pi / 180);
@@ -30,10 +29,14 @@ scene.background = texture;
 
 // TODO: Texture Loading
 // We usually do the texture loading before we start everything else, as it might take processing time
+const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
+//const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
+const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 
 
 // TODO: Add Lighting
-
+scene.add( new THREE.AmbientLight( 0xffffff))
+scene.add(new THREE.DirectionalLight(0xffffff, 0.7 ))
 
 // TODO: Spaceship
 const hullGeometry = new THREE.CylinderGeometry(1, 1, 3, 30);
@@ -122,8 +125,6 @@ const stars = new THREE.Points(starGeometry, starMaterial);
 scene.add(stars);
 
 // ugly testing planet
-const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
-//const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
 const earthMaterial = new THREE.MeshPhongMaterial({map: earthTexture})
     //bumpMap: earthBump),
@@ -134,7 +135,6 @@ earthTranslate.makeTranslation(100, 5, 100);
 earth.applyMatrix4(earthTranslate);
 scene.add(earth)
 
-const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 const moonGeometry = new THREE.SphereGeometry(10, 40, 400);
 const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture})
 const moon = new THREE.Mesh(moonGeometry, moonMaterial);
@@ -160,8 +160,6 @@ camera.position.z = hull.position.z + -100;
 camera.lookAt(hull.position);
 
 renderer.render( scene, camera );
-
-scene.add( new THREE.AmbientLight( 0xffffff))
 
 // TODO: Add collectible stars
 
