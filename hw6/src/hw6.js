@@ -1,4 +1,6 @@
-// Scene Declartion
+//import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+//const controls = new OrbitControls( camera, renderer.domElement );
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -7,13 +9,11 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 
-// helper function for later on
 function degrees_to_radians(degrees)
 {
-  var pi = Math.PI;
-  return degrees * (pi/180);
+    var pi = Math.PI;
+    return degrees * (pi/180);
 }
-
 
 // Here we load the cubemap and skymap, you may change it
 
@@ -98,14 +98,7 @@ const windowRotation = new THREE.Matrix4();
 windowRotation.makeRotationZ(degrees_to_radians(90));
 windows.applyMatrix4(windowRotation);
 hull.add( windows );
-
-const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
-const planetMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
-const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-const planetTranslate = new THREE.Matrix4();
-planetTranslate.makeTranslation(30,-15,10);
-planet.applyMatrix4(planetTranslate);
-scene.add(hull);
+scene.add(hull)
 
 // TODO: Planets
 // You should add both earth and the moon here
@@ -122,12 +115,26 @@ starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVerti
 const stars = new THREE.Points(starGeometry, starMaterial);
 scene.add(stars);
 
+// ugly testing planet
+const planetGeometry = new THREE.SphereGeometry(15, 80, 780);
+const planetMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
+const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+const planetTranslate = new THREE.Matrix4();
+planetTranslate.makeTranslation(30,-15,10);
+planet.applyMatrix4(planetTranslate);
+scene.add(planet)
+
 // TODO: Bezier Curves
 
 
 // TODO: Camera Settings
 // Set the camera following the spaceship here
 
+//const cameraTranslate = new THREE.Matrix4();
+//cameraTranslate.makeTranslation(0,20,0);
+//camera.applyMatrix4(cameraTranslate)
+
+//renderer.render( scene, camera );
 
 // TODO: Add collectible stars
 
@@ -157,8 +164,8 @@ function animate() {
 
 	// TODO: Test for star-spaceship collision
 
-    flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
-    flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
+    //flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
+    //flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
 
     renderer.render( scene, camera );
 
