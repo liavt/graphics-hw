@@ -122,10 +122,11 @@ const stars = new THREE.Points(starGeometry, starMaterial);
 scene.add(stars);
 
 // ugly testing planet
-const earthTexture = new THREE.TextureLoader().load( 'textures/earth.jpg' );
+const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
+//const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
 const earthMaterial = new THREE.MeshPhongMaterial({map: earthTexture})
-    //bumpMap: THREE.ImageUtils.TextureLoader('textures/earthbump.jpeg'),
+    //bumpMap: earthBump),
     //bumpScale:   0.005})
 const earth = new THREE.Mesh(earthGeometry, earthMaterial);
 const earthTranslate = new THREE.Matrix4();
@@ -133,8 +134,9 @@ earthTranslate.makeTranslation(100, 5, 100);
 earth.applyMatrix4(earthTranslate);
 scene.add(earth)
 
+const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 const moonGeometry = new THREE.SphereGeometry(10, 40, 400);
-const moonMaterial = new THREE.MeshPhongMaterial({color: 0x243652})
+const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture})
 const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 const moonTranslate = new THREE.Matrix4();
 moonTranslate.makeTranslation(0, 0, 0);
