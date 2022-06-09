@@ -3,6 +3,7 @@
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const START_POINT = new THREE.Vector3( 6, 6, 6 );
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -35,16 +36,11 @@ const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 
 
 // TODO: Add Lighting
-scene.add( new THREE.AmbientLight( 0xffffff))
-scene.add(new THREE.DirectionalLight(0xffffff, 0.7 ))
 
 // TODO: Spaceship
 const hullGeometry = new THREE.CylinderGeometry(1, 1, 3, 30);
 const hullMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
 const hull = new THREE.Mesh(hullGeometry, hullMaterial);
-const hullTranslate = new THREE.Matrix4();
-hullTranslate.makeTranslation(10, 10, 10);
-hull.applyMatrix4(hullTranslate);
 
 const headGeometry = new THREE.ConeGeometry(1, 1, 30);
 const headMaterial = new THREE.MeshPhongMaterial({color: 0xaa0000});
@@ -63,7 +59,8 @@ hull.add(exhaust);
 const flame = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 20), new THREE.MeshPhongMaterial({
     color: 0xee2222,
     transparent: true,
-    opacity: 0.7
+    opacity: 0.7,
+    emissive: 0xee2222
 }));
 {
     const flameRotate = new THREE.Matrix4();
@@ -80,7 +77,8 @@ hull.add(flame);
 const flame2 = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.4, 20), new THREE.MeshPhongMaterial({
     color: 0xfc6b03,
     transparent: true,
-    opacity: 0.7
+    opacity: 0.7,
+    emissive: 0xfc6b03
 }));
 {
     const flame2Rotate = new THREE.Matrix4();
@@ -111,18 +109,20 @@ scene.add(hull)
 
 // TODO: Planets
 // You should add both earth and the moon here
-const starGeometry = new THREE.BufferGeometry();
-const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, sizeAttenuation: false})
-const starVertices = []
-for (let i = 0; i < 10000; i++) {
-    const x = (Math.random() - .5) * 2000
-    const y = (Math.random() - .5) * 2000
-    const z = (Math.random() - .5) * 2000
-    starVertices.push(x, y, z)
+{
+  const starGeometry = new THREE.BufferGeometry();
+  const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, sizeAttenuation: false})
+  const starVertices = []
+  for (let i = 0; i < 10000; i++) {
+      const x = (Math.random() - .5) * 2000
+      const y = (Math.random() - .5) * 2000
+      const z = (Math.random() - .5) * 2000
+      starVertices.push(x, y, z)
+  }
+  starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
+  const stars = new THREE.Points(starGeometry, starMaterial);
+  scene.add(stars);
 }
-starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
-const stars = new THREE.Points(starGeometry, starMaterial);
-scene.add(stars);
 
 // ugly testing planet
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
@@ -136,30 +136,84 @@ earth.applyMatrix4(earthTranslate);
 scene.add(earth)
 
 const moonGeometry = new THREE.SphereGeometry(10, 40, 400);
-const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture})
+const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture});
 const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 const moonTranslate = new THREE.Matrix4();
 moonTranslate.makeTranslation(0, 0, 0);
 moon.applyMatrix4(moonTranslate);
-scene.add(moon)
+scene.add(moon);
+
+{
+  //scene.add( new THREE.AmbientLight( 0xffffff))
+  const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+  sun.target = earth;
+  scene.add(sun);
+
+  //scene.add(new THREE.AmbientLight(0x333333))
+}
 
 
 // TODO: Bezier Curves
+
+const curves = [
+  new THREE.QuadraticBezierCurve3(
+    START_POINT,
+  	new THREE.Vector3( 0, 5, 40 ),
+    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8),
+  ),
+  new THREE.QuadraticBezierCurve3(
+    START_POINT,
+  	new THREE.Vector3( 50, 0, 50 ),
+    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8 ),
+  ),
+  new THREE.QuadraticBezierCurve3(
+    START_POINT,
+  	new THREE.Vector3( 70, -5, 70 ),
+    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8 ),
+  )
+]
+
+for (const curve of curves) {
+  const points = curve.getPoints( 50 );
+  const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+  const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+
+  // Create the final object to add to the scene
+  const curveObject = new THREE.Line( geometry, material );
+  scene.add(curveObject);
+}
 
 
 // TODO: Camera Settings
 // Set the camera following the spaceship here
 
-const cameraTranslate = new THREE.Matrix4();
-cameraTranslate.makeTranslation(0,20,0);
-camera.applyMatrix4(cameraTranslate)
-
-camera.position.x = hull.position.x +100 ;
-camera.position.y = hull.position.y + 100;
-camera.position.z = hull.position.z + -100;
-camera.lookAt(hull.position);
-
 renderer.render( scene, camera );
+
+const NUMBER_OF_STARS = 10;
+const stars = []
+
+const starGeometry = new THREE.SphereGeometry(1, 40, 400);
+const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
+starMaterial.emissive = new THREE.Color(0xffffff);
+for (let i = 0; i < NUMBER_OF_STARS; ++i) {
+  const curve = Math.floor(Math.random() * curves.length);
+  const t = Math.random();
+
+  const star = new THREE.Mesh(starGeometry, starMaterial);
+  const starTranslate = new THREE.Matrix4();
+  const position = curves[curve].getPoint(t);
+  starTranslate.makeTranslation(position.x, position.y, position.z);
+  star.applyMatrix4(starTranslate);
+  scene.add(star);
+
+  stars.push({
+    curve: curve,
+    t: t,
+    object: star,
+    collected: false
+  });
+}
 
 // TODO: Add collectible stars
 
@@ -184,40 +238,111 @@ heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
 heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
 
 const heartGeometry = new THREE.ShapeGeometry(heartShape);
-const heartMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00});
+const heartMaterial = new THREE.MeshPhongMaterial({color: 0x00ff00});
 const heart = new THREE.Mesh(heartGeometry, heartMaterial);
-//scene.add(heart);
+scene.add(heart);
+
+const cameraTranslate = new THREE.Matrix4();
+cameraTranslate.makeTranslation(0,20,0);
+camera.applyMatrix4(cameraTranslate)
+
+camera.position.x = hull.position.x +100 ;
+camera.position.y = hull.position.y + 100;
+camera.position.z = hull.position.z + -100;
+camera.lookAt(hull.position);
 
 // TODO: Add keyboard event
 // We wrote some of the function for you
 
 //const controls = new OrbitControls( camera, renderer.domElement );
 
+let increments = 1_000;
+let t = 0;
+let currentCurve = 0;
+let score = 0;
+
 const handle_keydown = (e) => {
     if (e.code == 'ArrowLeft') {
-        // TODO
+        currentCurve = (currentCurve + 1) % curves.length;
     } else if (e.code == 'ArrowRight') {
-        // TODO
+        currentCurve = (currentCurve - 1 + curves.length) % curves.length;
+    } else if (e.code == 'ArrowDown') {
+        increments = Math.min(increments + 100, 8_000);
+    } else if (e.code == 'ArrowUp') {
+        increments = Math.max(increments - 100, 100);
     }
+    console.log(currentCurve);
 }
 document.addEventListener('keydown', handle_keydown);
 
 //controls.update();
 
 function animate() {
+    setTimeout( function() {
 
-    requestAnimationFrame(animate);
+        requestAnimationFrame( animate );
 
-    // TODO: Animation for the spaceship position
+    }, 1000 / 60 );
 
+    if (hull.visible) {
+      {
+          /*const followCurveMatrix = new THREE.Matrix4();
+          const translation = (curves[currentCurve].getPoint(t)).sub(hull.position);
+          followCurveMatrix.makeTranslation(translation.x, translation.y, translation.z);
+          hull.applyMatrix4(followCurveMatrix);*/
+      }
 
-    // TODO: Test for star-spaceship collision
+      {
+          const newPosition = curves[currentCurve].getPoint(t);
+          const tangent = curves[currentCurve].getTangent(t);
+          hull.position.copy(newPosition);
+          const up = new THREE.Vector3( 0, 1, 0 );
+          const axis = new THREE.Vector3( );
+          axis.crossVectors( up, tangent ).normalize();
 
-    //flame.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3 : 0.0
-    //flame2.material.opacity = (animation1 || animation2 || animation3) ? ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1 : 0.0
+          const radians = Math.acos( up.dot( tangent ) );
+
+          hull.quaternion.setFromAxisAngle( axis, radians );
+      }
+
+      {
+          //const followCurveMatrix = new THREE.Matrix4();
+          //followCurveMatrix.lookAt(hull.position, curves[currentCurve].getPoint(t + 0.001), THREE.Object3D.DefaultUp);
+          //hull.applyMatrix4(followCurveMatrix);
+      }
+
+      for (let star of stars) {
+        if (!star.collected
+          && currentCurve === star.curve
+          && Math.abs(t - star.t) <= 0.001) {
+            ++score;
+            star.collected = true;
+            star.object.visible = false;
+        }
+      }
+
+      flame.material.opacity = ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3;
+      flame2.material.opacity = ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1;
+
+      t += (1.0 / increments);
+
+      /*
+      {
+        const cameraTranslate = new THREE.Matrix4();
+        const translation = hull.position.sub(camera.position);
+        cameraTranslate.makeTranslation(translation.x - 20, translation.y - 20, translation.z - 20);
+        camera.applyMatrix4(cameraTranslate);
+        camera.lookAt(hull.position);
+        camera.updateProjectionMatrix();
+      }*/
+
+      if (t >= 1) {
+        hull.visible = false;
+        alert("YOURE A HUNGRY BOY YOU ATE " + score + " STARS");
+      }
+    }
 
     renderer.render(scene, camera);
-
 }
 
 animate()
