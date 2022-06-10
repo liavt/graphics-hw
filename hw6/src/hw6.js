@@ -33,7 +33,7 @@ scene.background = texture;
 const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
 //const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
 const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
-
+const wormTexture = new THREE.TextureLoader().load('src/textures/worm.jpeg')
 
 // TODO: Add Lighting
 
@@ -226,9 +226,23 @@ function loadFont(url) {
     });
 }
 
+var torusKnotGeometry = new THREE.TorusKnotGeometry(50, 10, 50, 10);
+var torusKnotMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xc9557a,
+    polygenOffset: true,
+    polygenOffsetFactor: 1,
+    polygenOffsetUnits: 1,
+    //why no shiny
+    specular: 0xffffff,
+    shininess: 100,
+    emission: 0xffffff,
+    map: wormTexture,
+});
+var torus = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
+scene.add(torus);
+
 const x = 0, y = 0;
 const heartShape = new THREE.Shape();
-
 heartShape.moveTo(x + 5, y + 5);
 heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
 heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
@@ -238,7 +252,7 @@ heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
 heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
 
 const heartGeometry = new THREE.ShapeGeometry(heartShape);
-const heartMaterial = new THREE.MeshPhongMaterial({color: 0x00ff00});
+const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
 const heart = new THREE.Mesh(heartGeometry, heartMaterial);
 scene.add(heart);
 
@@ -283,6 +297,7 @@ function animate() {
         requestAnimationFrame( animate );
 
     }, 1000 / 60 );
+
 
     if (hull.visible) {
       {
