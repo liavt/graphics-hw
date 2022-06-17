@@ -31,7 +31,8 @@ scene.background = texture;
 // TODO: Texture Loading
 // We usually do the texture loading before we start everything else, as it might take processing time
 const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
-//const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
+const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
+const earthEmission = new THREE.TextureLoader().load('/src/textures/earthlights.jpg');
 const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 const wormTexture = new THREE.TextureLoader().load('src/textures/worm.jpeg')
 
@@ -126,14 +127,19 @@ scene.add(hull)
 
 // ugly testing planet
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
-const earthMaterial = new THREE.MeshPhongMaterial({map: earthTexture})
-    //bumpMap: earthBump),
-    //bumpScale:   0.005})
+const earthMaterial = new THREE.MeshStandardMaterial({
+    map: earthTexture,
+    bumpMap: earthBump,
+    bumpScale:   0.05,
+    emissiveMap: earthEmission,
+    emissive: 0xCFC6C9
+  })
 const earth = new THREE.Mesh(earthGeometry, earthMaterial);
 const earthTranslate = new THREE.Matrix4();
 earthTranslate.makeTranslation(100, 5, 100);
+const earthTranslateInverse = earthTranslate.clone().invert();
 earth.applyMatrix4(earthTranslate);
-scene.add(earth)
+scene.add(earth);
 
 const moonGeometry = new THREE.SphereGeometry(10, 40, 400);
 const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture});
@@ -141,12 +147,21 @@ const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 const moonTranslate = new THREE.Matrix4();
 moonTranslate.makeTranslation(0, 0, 0);
 moon.applyMatrix4(moonTranslate);
+const moonTranslateInverse = moonTranslate.clone().invert();
 scene.add(moon);
 
 {
+  earth.updateMatrixWorld();
+  const sunTarget = new THREE.Object3D();
+  const sunTranslate = new THREE.Matrix4();
+  sunTranslate.makeTranslation(20, 0, -10);
+  sunTarget.applyMatrix4(sunTranslate);
+
+  scene.add(sunTarget);
+
   //scene.add( new THREE.AmbientLight( 0xffffff))
   const sun = new THREE.DirectionalLight(0xffffff, 0.7);
-  sun.target = earth;
+  sun.target = sunTarget;
   scene.add(sun);
 
   //scene.add(new THREE.AmbientLight(0x333333))
@@ -159,17 +174,17 @@ const curves = [
   new THREE.QuadraticBezierCurve3(
     START_POINT,
   	new THREE.Vector3( 0, 5, 40 ),
-    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8),
+    new THREE.Vector3( 100 - 8, 5, 100 - 8),
   ),
   new THREE.QuadraticBezierCurve3(
     START_POINT,
-  	new THREE.Vector3( 50, 0, 50 ),
-    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8 ),
+  	new THREE.Vector3( 50, 5, 50 ),
+    new THREE.Vector3( 100 - 8, 5, 100 - 8 ),
   ),
   new THREE.QuadraticBezierCurve3(
     START_POINT,
-  	new THREE.Vector3( 70, -5, 70 ),
-    new THREE.Vector3( 100 + 8, 5 + 8, 100 + 8 ),
+  	new THREE.Vector3( 40, -10, 5 ),
+    new THREE.Vector3( 100 - 8, 5, 100 - 8 ),
   )
 ]
 
@@ -265,11 +280,6 @@ camera.position.y = hull.position.y + 100;
 camera.position.z = hull.position.z + -100;
 camera.lookAt(hull.position);
 
-// TODO: Add keyboard event
-// We wrote some of the function for you
-
-//const controls = new OrbitControls( camera, renderer.domElement );
-
 let increments = 1_000;
 let t = 0;
 let currentCurve = 0;
@@ -299,12 +309,34 @@ function animate() {
     }, 1000 / 60 );
 
 
+    // earth orbit
+    {
+      earth.applyMatrix4(earthTranslateInverse);
+      const earthRotation = new THREE.Matrix4();
+      earthRotation.makeRotationY(degrees_to_radians(0.2));
+      earth.applyMatrix4(earthRotation);
+      earth.applyMatrix4(earthTranslate);
+    }
+
+    // moon orbit
+    {
+      moon.applyMatrix4(moonTranslateInverse);
+      const moonRotation = new THREE.Matrix4();
+      moonRotation.makeRotationY(degrees_to_radians(0.1));
+      moon.applyMatrix4(moonRotation);
+      moon.applyMatrix4(moonTranslate);
+    }
+
     if (hull.visible) {
       {
           /*const followCurveMatrix = new THREE.Matrix4();
           const translation = (curves[currentCurve].getPoint(t)).sub(hull.position);
           followCurveMatrix.makeTranslation(translation.x, translation.y, translation.z);
           hull.applyMatrix4(followCurveMatrix);*/
+          camera.position.x = hull.position.x - 10;
+          camera.position.y = hull.position.y + 10;
+          camera.position.z = hull.position.z - 10;
+          camera.lookAt(hull.position);
       }
 
       {
