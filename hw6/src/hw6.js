@@ -35,6 +35,10 @@ const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg')
 const earthEmission = new THREE.TextureLoader().load('/src/textures/earthlights.jpg');
 const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 const wormTexture = new THREE.TextureLoader().load('src/textures/worm.jpeg')
+const sunTexture =new THREE.TextureLoader().load('src/sun.jpeg');
+const venusTexture =new THREE.TextureLoader().load('2k_venus_surface.jpeg');
+
+
 
 // TODO: Add Lighting
 
@@ -163,6 +167,22 @@ moon.applyMatrix4(moonTranslate);
 const moonTranslateInverse = moonTranslate.clone().invert();
 scene.add(moon);
 
+const sunGeometry = new THREE.SphereGeometry(200, 80, 780);
+const sunMaterial = new THREE.MeshStandardMaterial({
+    map: sunTexture,
+})
+sunMaterial.emissive = new THREE.Color(0xffffff);
+sunMaterial.emissiveIntensity = .5;
+const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+const sunTranslate = new THREE.Matrix4();
+sunTranslate.makeTranslation(100, 5, 1000);
+const sunTranslateInverse = sunTranslate.clone().invert();
+sun.applyMatrix4(sunTranslate);
+scene.add(sun);
+{
+    //sunlight?
+}
+
 {
   earth.updateMatrixWorld();
   const sunTarget = new THREE.Object3D();
@@ -252,7 +272,6 @@ const STAR_MODELS = [];
   heart.applyMatrix4(transform);
   //STAR_MODELS.push(heart);
 }
-
 {
   //const donut = objLoader.load("obj/donut.obj");
   //STAR_MODELS.push(donut);
@@ -279,7 +298,7 @@ for (let i = 0; i < NUMBER_OF_STARS; ++i) {
 }
 
 
-let torusKnotMaterial = new THREE.MeshStandardMaterial({
+let spaceJunkMaterial = new THREE.MeshStandardMaterial({
     color: 0x9bb0b1,
     polygenOffset: true,
     polygenOffsetFactor: 1,
@@ -288,17 +307,17 @@ let torusKnotMaterial = new THREE.MeshStandardMaterial({
     specular: 0xffffff,
     shininess: 100,
     emissive: 0x9bb0b1,
-    metalness: 0.5,
-    emissiveIntensity: 0.3,
-    map: wormTexture,
+    metalness: 1,
+    emissiveIntensity: 0.5,
+    //map: wormTexture,
 });
 
 for (let i = 0; i < NUMBER_OF_BAD_STARS; ++i) {
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
 
-  let torusKnotGeometry = new THREE.TorusKnotGeometry(0.6 + (Math.random() * 0.2), 0.1 + (Math.random() * 0.3), 40, 10, Math.ceil(Math.random() * 10), Math.ceil(Math.random() * 10));
-  const badStar = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
+  let spaceJunkGeometry = new THREE.TorusKnotGeometry(0.6 + (Math.random() * 0.2), 0.1 + (Math.random() * 0.3), 40, 10, Math.ceil(Math.random() * 10), Math.ceil(Math.random() * 10));
+  const badStar = new THREE.Mesh(spaceJunkGeometry, spaceJunkMaterial);
   {
     const badStarRotate = new THREE.Matrix4();
     badStarRotate.makeRotationFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6));
@@ -318,18 +337,6 @@ for (let i = 0; i < NUMBER_OF_BAD_STARS; ++i) {
     score: -1
   });
 }
-
-// TODO: Add collectible stars
-
-const textLoader = new THREE.FontLoader();
-
-// promisify font loading
-function loadFont(url) {
-    return new Promise((resolve, reject) => {
-        textLoader.load(url, resolve, undefined, reject);
-    });
-}
-
 
 const cameraTranslate = new THREE.Matrix4();
 cameraTranslate.makeTranslation(0,20,0);
@@ -396,9 +403,9 @@ function animate() {
           const translation = (curves[currentCurve].getPoint(t)).sub(hull.position);
           followCurveMatrix.makeTranslation(translation.x, translation.y, translation.z);
           hull.applyMatrix4(followCurveMatrix);*/
-          camera.position.x = hull.position.x - 10;
-          camera.position.y = hull.position.y + 10;
-          camera.position.z = hull.position.z - 10;
+          camera.position.x = hull.position.x - 100;
+          camera.position.y = hull.position.y + 100;
+          camera.position.z = hull.position.z - 100;
           camera.lookAt(hull.position);
       }
 
