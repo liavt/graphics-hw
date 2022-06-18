@@ -49,7 +49,21 @@ const head = new THREE.Mesh(headGeometry, headMaterial);
 const headTranslate = new THREE.Matrix4();
 headTranslate.makeTranslation(0, 2, 0);
 head.applyMatrix4(headTranslate);
-hull.add(head)
+hull.add(head);
+
+{
+  const headLightTrack = new THREE.Object3D();
+  const headLightTranslate = new THREE.Matrix4();
+  headLightTranslate.makeTranslation(0, 2, 0);
+  headLightTrack.applyMatrix4(headLightTranslate);
+  hull.add(headLightTrack);
+
+  const headlight = new THREE.SpotLight(0xff0000);
+  headlight.distance = 30;
+  headlight.castShadow = true;
+  hull.add(headlight);
+  headlight.target = headLightTrack;
+}
 
 const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.7, 20), new THREE.MeshPhongMaterial({color: 0x333333}));
 const exhaustTranslate = new THREE.Matrix4();
@@ -108,7 +122,6 @@ windows.applyMatrix4(windowRotation);
 hull.add(windows);
 scene.add(hull)
 
-// TODO: Planets
 // You should add both earth and the moon here
 {
   const starGeometry = new THREE.BufferGeometry();
@@ -206,16 +219,50 @@ for (const curve of curves) {
 renderer.render( scene, camera );
 
 const NUMBER_OF_STARS = 10;
+const NUMBER_OF_BAD_STARS = 5;
 const stars = []
 
-const starGeometry = new THREE.SphereGeometry(1, 40, 400);
-const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
-starMaterial.emissive = new THREE.Color(0xffffff);
+const STAR_MODELS = [];
+
+//glowy sphere
+{
+  const starGeometry = new THREE.SphereGeometry(1, 40, 400);
+  const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
+  starMaterial.emissive = new THREE.Color(0xffffff);
+  STAR_MODELS.push(new THREE.Mesh(starGeometry, starMaterial));
+}
+
+{
+  const x = 0, y = 0;
+  const heartShape = new THREE.Shape();
+  heartShape.moveTo(x + 5, y + 5);
+  heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+  heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+  heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+  heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+  heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+  heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+
+  const heartGeometry = new THREE.ShapeGeometry(heartShape);
+  const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
+
+  const transform = new THREE.Matrix4();
+  transform.makeScale(0.5, 0.5, 0.5);
+  const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+  heart.applyMatrix4(transform);
+  //STAR_MODELS.push(heart);
+}
+
+{
+  //const donut = objLoader.load("obj/donut.obj");
+  //STAR_MODELS.push(donut);
+}
+
 for (let i = 0; i < NUMBER_OF_STARS; ++i) {
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
 
-  const star = new THREE.Mesh(starGeometry, starMaterial);
+  const star = STAR_MODELS[Math.floor(Math.random() * STAR_MODELS.length)].clone();
   const starTranslate = new THREE.Matrix4();
   const position = curves[curve].getPoint(t);
   starTranslate.makeTranslation(position.x, position.y, position.z);
@@ -226,7 +273,49 @@ for (let i = 0; i < NUMBER_OF_STARS; ++i) {
     curve: curve,
     t: t,
     object: star,
-    collected: false
+    collected: false,
+    score: 1
+  });
+}
+
+
+let torusKnotMaterial = new THREE.MeshStandardMaterial({
+    color: 0x9bb0b1,
+    polygenOffset: true,
+    polygenOffsetFactor: 1,
+    polygenOffsetUnits: 1,
+    //why no shiny
+    specular: 0xffffff,
+    shininess: 100,
+    emissive: 0x9bb0b1,
+    metalness: 0.5,
+    emissiveIntensity: 0.3,
+    map: wormTexture,
+});
+
+for (let i = 0; i < NUMBER_OF_BAD_STARS; ++i) {
+  const curve = Math.floor(Math.random() * curves.length);
+  const t = Math.random();
+
+  let torusKnotGeometry = new THREE.TorusKnotGeometry(0.6 + (Math.random() * 0.2), 0.1 + (Math.random() * 0.3), 40, 10, Math.ceil(Math.random() * 10), Math.ceil(Math.random() * 10));
+  const badStar = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
+  {
+    const badStarRotate = new THREE.Matrix4();
+    badStarRotate.makeRotationFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6));
+    badStar.applyMatrix4(badStarRotate);
+  }
+  const position = curves[curve].getPoint(t);
+  const badStarTranslate = new THREE.Matrix4();
+  badStarTranslate.makeTranslation(position.x, position.y, position.z);
+  badStar.applyMatrix4(badStarTranslate);
+  scene.add(badStar);
+
+  stars.push({
+    curve: curve,
+    t: t,
+    object: badStar,
+    collected: false,
+    score: -1
   });
 }
 
@@ -241,35 +330,6 @@ function loadFont(url) {
     });
 }
 
-var torusKnotGeometry = new THREE.TorusKnotGeometry(50, 10, 50, 10);
-var torusKnotMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xc9557a,
-    polygenOffset: true,
-    polygenOffsetFactor: 1,
-    polygenOffsetUnits: 1,
-    //why no shiny
-    specular: 0xffffff,
-    shininess: 100,
-    emission: 0xffffff,
-    map: wormTexture,
-});
-var torus = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
-scene.add(torus);
-
-const x = 0, y = 0;
-const heartShape = new THREE.Shape();
-heartShape.moveTo(x + 5, y + 5);
-heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
-heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
-heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
-heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
-heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
-
-const heartGeometry = new THREE.ShapeGeometry(heartShape);
-const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
-const heart = new THREE.Mesh(heartGeometry, heartMaterial);
-scene.add(heart);
 
 const cameraTranslate = new THREE.Matrix4();
 cameraTranslate.makeTranslation(0,20,0);
@@ -301,19 +361,22 @@ document.addEventListener('keydown', handle_keydown);
 
 //controls.update();
 
+let lastTime = Date.now()
+
 function animate() {
     setTimeout( function() {
-
         requestAnimationFrame( animate );
-
     }, 1000 / 60 );
+
+    const delta = Date.now() - lastTime;
+    lastTime = Date.now();
 
 
     // earth orbit
     {
       earth.applyMatrix4(earthTranslateInverse);
       const earthRotation = new THREE.Matrix4();
-      earthRotation.makeRotationY(degrees_to_radians(0.2));
+      earthRotation.makeRotationY(degrees_to_radians((delta / 16.6) * 0.2));
       earth.applyMatrix4(earthRotation);
       earth.applyMatrix4(earthTranslate);
     }
@@ -322,7 +385,7 @@ function animate() {
     {
       moon.applyMatrix4(moonTranslateInverse);
       const moonRotation = new THREE.Matrix4();
-      moonRotation.makeRotationY(degrees_to_radians(0.1));
+      moonRotation.makeRotationY(degrees_to_radians((delta / 16.6) * 0.1));
       moon.applyMatrix4(moonRotation);
       moon.applyMatrix4(moonTranslate);
     }
@@ -361,17 +424,30 @@ function animate() {
       for (let star of stars) {
         if (!star.collected
           && currentCurve === star.curve
-          && Math.abs(t - star.t) <= 0.001) {
-            ++score;
+          && Math.abs(t - star.t) <= 2 * (delta / 16.6) * (1.0 / increments)) {
+            score += star.score;
             star.collected = true;
             star.object.visible = false;
+        }
+        let pos = new THREE.Vector3();
+        star.object.getWorldPosition(pos);
+        {
+          let transform = new THREE.Matrix4();
+          transform.makeTranslation(-pos.x, -pos.y, -pos.z);
+          star.object.applyMatrix4(transform);
+          transform = new THREE.Matrix4();
+          transform.makeRotationFromEuler(new THREE.Euler((delta / 16.6) * 0.03, (delta / 16.6) * -0.04, (delta / 16.6) * 0.02));
+          star.object.applyMatrix4(transform);
+          transform = new THREE.Matrix4();
+          transform.makeTranslation(pos.x, pos.y, pos.z);
+          star.object.applyMatrix4(transform);
         }
       }
 
       flame.material.opacity = ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3;
       flame2.material.opacity = ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1;
 
-      t += (1.0 / increments);
+      t += (delta / 16.6) * (1.0 / increments);
 
       /*
       {
