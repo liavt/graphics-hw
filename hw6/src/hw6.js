@@ -16,27 +16,28 @@ function degrees_to_radians(degrees) {
 
 // Here we load the cubemap and skymap, you may change it
 
-const loader = new THREE.CubeTextureLoader();
-const texture = loader.load([
+const textureLoader = new THREE.TextureLoader();
+const skyboxTextures = [
     'src/skybox/right.png',
     'src/skybox/left.png',
     'src/skybox/top.png',
     'src/skybox/bottom.png',
     'src/skybox/front.png',
     'src/skybox/back.png',
-]);
+];
 //console.log(texture.image);
-scene.background = texture;
+//scene.background = texture;
 
-const skybox = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), texture.image.map((img)=>{
-  return new THREE.MeshBasicMaterial({ map: img, side: THREE.BackSide });
+const skybox = new THREE.Mesh(new THREE.BoxGeometry(1001, 1001, 1001), skyboxTextures.map((img)=>{
+  return new THREE.MeshBasicMaterial({
+    //color: 0xff0000,
+    map: textureLoader.load(img),
+    side: THREE.BackSide });
 }));
-camera.add(skybox);
 
 
 // TODO: Texture Loading
 // We usually do the texture loading before we start everything else, as it might take processing time
-const textureLoader = new THREE.TextureLoader();
 const earthTexture = textureLoader.load( 'src/textures/earth.jpg' );
 const earthBump = textureLoader.load('/src/textures/earthbump.jpeg');
 const earthEmission = textureLoader.load('/src/textures/earthlights.jpg');
@@ -54,7 +55,7 @@ const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
 const earthMaterial = new THREE.MeshStandardMaterial({
     map: earthTexture,
     bumpMap: earthBump,
-    bumpScale:   0.8,
+    bumpScale:   0.5,
     emissiveMap: earthEmission,
     emissive: 0xCFC6C9
   })
@@ -77,9 +78,6 @@ moonTranslate.makeTranslation(0, 0, 0);
 moon.applyMatrix4(moonTranslate);
 const moonTranslateInverse = moonTranslate.clone().invert();
 
-// TODO: Add Lighting
-
-// TODO: Spaceship
 const hullGeometry = new THREE.CylinderGeometry(1, 1, 3, 30);
 const hullMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
 const hull = new THREE.Mesh(hullGeometry, hullMaterial);
@@ -169,9 +167,9 @@ hull.add(windows);
   const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, sizeAttenuation: false})
   const starVertices = []
   for (let i = 0; i < 10000; i++) {
-      const x = (Math.random() - .5) * 2000
-      const y = (Math.random() - .5) * 2000
-      const z = (Math.random() - .5) * 2000
+      const x = (Math.random() - .5) * 1000
+      const y = (Math.random() - .5) * 1000
+      const z = (Math.random() - .5) * 1000
       starVertices.push(x, y, z)
   }
   starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
@@ -183,6 +181,7 @@ scene.add(moon);
 
 moon.add(hull);
 hull.add(camera);
+moon.add(skybox);
 
 
 {
@@ -208,7 +207,7 @@ const sunRay = new THREE.SpriteMaterial({map: sunRaysTexture, sizeAttenuation: f
 const sun = new THREE.Sprite(sunRay);
 sun.frustumCulled = false;
 const sunTranslate = new THREE.Matrix4();
-sunTranslate.makeTranslation(100, 5, 1000);
+sunTranslate.makeTranslation(100, 5, 300);
 const sunTranslateInverse = sunTranslate.clone().invert();
 sun.applyMatrix4(sunTranslate);
 scene.add(sun);
@@ -470,7 +469,9 @@ function animate() {
             score += star.score;
             star.collected = true;
             star.object.visible = false;
-        }/*
+        }
+        console.log(star.object.matrix);
+        /*
         star.object.updateMatrixWorld();
         let pos = new THREE.Matrix4();
         star.object.matrix.copyPosition(pos);
