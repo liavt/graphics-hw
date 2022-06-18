@@ -35,8 +35,8 @@ const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg')
 const earthEmission = new THREE.TextureLoader().load('/src/textures/earthlights.jpg');
 const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
 const wormTexture = new THREE.TextureLoader().load('src/textures/worm.jpeg')
-const sunTexture =new THREE.TextureLoader().load('src/sun.jpeg');
-const venusTexture =new THREE.TextureLoader().load('src/2k_venus_surface.jpeg');
+const sunTexture =new THREE.TextureLoader().load('src/textures/sun.jpeg');
+const venusTexture =new THREE.TextureLoader().load('src/textures/2k_venus_surface.jpeg');
 
 
 
@@ -167,9 +167,9 @@ moon.applyMatrix4(moonTranslate);
 const moonTranslateInverse = moonTranslate.clone().invert();
 scene.add(moon);
 
-const sunGeometry = new THREE.SphereGeometry(200, 80, 780);
-const sunMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
-sunMaterial.emissive = 0xffffff;
+const sunGeometry = new THREE.SphereGeometry(20, 80, 780);
+const sunMaterial = new THREE.MeshPhongMaterial({emissiveMap: sunTexture, sizeAttenuation: false});
+sunMaterial.emissive = new THREE.Color(0xffffff);
 //sunMaterial.emissiveIntensity = .5;
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 const sunTranslate = new THREE.Matrix4();
