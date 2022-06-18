@@ -3,7 +3,7 @@
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const START_POINT = new THREE.Vector3( 6, 6, 6 );
+const START_POINT = new THREE.Vector3( 1,1,1 );
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -25,20 +25,57 @@ const texture = loader.load([
     'src/skybox/front.png',
     'src/skybox/back.png',
 ]);
+//console.log(texture.image);
 scene.background = texture;
+
+const skybox = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), texture.image.map((img)=>{
+  return new THREE.MeshBasicMaterial({ map: img, side: THREE.BackSide });
+}));
+camera.add(skybox);
 
 
 // TODO: Texture Loading
 // We usually do the texture loading before we start everything else, as it might take processing time
-const earthTexture = new THREE.TextureLoader().load( 'src/textures/earth.jpg' );
-const earthBump = new THREE.TextureLoader().load('/src/textures/earthbump.jpeg');
-const earthEmission = new THREE.TextureLoader().load('/src/textures/earthlights.jpg');
-const moonTexture = new THREE.TextureLoader().load('src/textures/moon.jpg')
-const wormTexture = new THREE.TextureLoader().load('src/textures/worm.jpeg')
-const sunTexture =new THREE.TextureLoader().load('src/textures/sun.jpeg');
-const venusTexture =new THREE.TextureLoader().load('src/textures/2k_venus_surface.jpeg');
+const textureLoader = new THREE.TextureLoader();
+const earthTexture = textureLoader.load( 'src/textures/earth.jpg' );
+const earthBump = textureLoader.load('/src/textures/earthbump.jpeg');
+const earthEmission = textureLoader.load('/src/textures/earthlights.jpg');
+const moonTexture = textureLoader.load('src/textures/moon.jpg')
+const moonHeightTexture = textureLoader.load('src/textures/moon_height.jpg')
+const wormTexture = textureLoader.load('src/textures/worm.jpeg')
+const sunTexture = textureLoader.load('src/textures/sun.jpeg');
+const venusTexture = textureLoader.load('src/textures/2k_venus_surface.jpeg');
+const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
 
 
+
+// ugly testing planet
+const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
+const earthMaterial = new THREE.MeshStandardMaterial({
+    map: earthTexture,
+    bumpMap: earthBump,
+    bumpScale:   0.8,
+    emissiveMap: earthEmission,
+    emissive: 0xCFC6C9
+  })
+const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+const earthTranslate = new THREE.Matrix4();
+earthTranslate.makeTranslation(100, 5, 100);
+const earthTranslateInverse = earthTranslate.clone().invert();
+earth.applyMatrix4(earthTranslate);
+scene.add(earth);
+
+const moonGeometry = new THREE.SphereGeometry(3, 40, 400);
+const moonMaterial = new THREE.MeshStandardMaterial({
+  map: moonTexture,
+  bumpMap: moonHeightTexture,
+  bumpScale: 0.12
+});
+const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+const moonTranslate = new THREE.Matrix4();
+moonTranslate.makeTranslation(0, 0, 0);
+moon.applyMatrix4(moonTranslate);
+const moonTranslateInverse = moonTranslate.clone().invert();
 
 // TODO: Add Lighting
 
@@ -124,7 +161,7 @@ const windowRotation = new THREE.Matrix4();
 windowRotation.makeRotationZ(degrees_to_radians(90));
 windows.applyMatrix4(windowRotation);
 hull.add(windows);
-scene.add(hull)
+
 
 // You should add both earth and the moon here
 {
@@ -139,47 +176,42 @@ scene.add(hull)
   }
   starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
   const stars = new THREE.Points(starGeometry, starMaterial);
-  scene.add(stars);
+  moon.add(stars);
 }
 
-// ugly testing planet
-const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
-const earthMaterial = new THREE.MeshStandardMaterial({
-    map: earthTexture,
-    bumpMap: earthBump,
-    bumpScale:   0.05,
-    emissiveMap: earthEmission,
-    emissive: 0xCFC6C9
-  })
-const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-const earthTranslate = new THREE.Matrix4();
-earthTranslate.makeTranslation(100, 5, 100);
-const earthTranslateInverse = earthTranslate.clone().invert();
-earth.applyMatrix4(earthTranslate);
-scene.add(earth);
-
-const moonGeometry = new THREE.SphereGeometry(10, 40, 400);
-const moonMaterial = new THREE.MeshPhongMaterial({map: moonTexture});
-const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-const moonTranslate = new THREE.Matrix4();
-moonTranslate.makeTranslation(0, 0, 0);
-moon.applyMatrix4(moonTranslate);
-const moonTranslateInverse = moonTranslate.clone().invert();
 scene.add(moon);
 
-const sunGeometry = new THREE.SphereGeometry(20, 80, 780);
-const sunMaterial = new THREE.MeshPhongMaterial({emissiveMap: sunTexture, sizeAttenuation: false});
-sunMaterial.emissive = new THREE.Color(0xffffff);
-//sunMaterial.emissiveIntensity = .5;
-const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+moon.add(hull);
+hull.add(camera);
+
+
+{
+  const cameraTransform = new THREE.Matrix4();
+  cameraTransform.makeRotationX(degrees_to_radians(60));
+  camera.applyMatrix4(cameraTransform);
+}
+
+{
+  const cameraTransform = new THREE.Matrix4();
+  cameraTransform.makeRotationY(degrees_to_radians(180));
+  camera.applyMatrix4(cameraTransform);
+}
+
+{
+  const cameraTransform = new THREE.Matrix4();
+  cameraTransform.makeTranslation(0, -30, -10);
+  camera.applyMatrix4(cameraTransform);
+}
+
+
+const sunRay = new THREE.SpriteMaterial({map: sunRaysTexture, sizeAttenuation: false});
+const sun = new THREE.Sprite(sunRay);
+sun.frustumCulled = false;
 const sunTranslate = new THREE.Matrix4();
 sunTranslate.makeTranslation(100, 5, 1000);
 const sunTranslateInverse = sunTranslate.clone().invert();
 sun.applyMatrix4(sunTranslate);
 scene.add(sun);
-{
-    //sunlight?
-}
 
 {
   earth.updateMatrixWorld();
@@ -191,9 +223,10 @@ scene.add(sun);
   scene.add(sunTarget);
 
   //scene.add( new THREE.AmbientLight( 0xffffff))
-  const sun = new THREE.DirectionalLight(0xffffff, 0.7);
-  sun.target = sunTarget;
-  scene.add(sun);
+  const sunLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  sunLight.target = earth;
+  sunLight.castShadow = true;
+  sun.add(sunLight);
 
   //scene.add(new THREE.AmbientLight(0x333333))
 }
@@ -227,7 +260,7 @@ for (const curve of curves) {
 
   // Create the final object to add to the scene
   const curveObject = new THREE.Line( geometry, material );
-  scene.add(curveObject);
+  moon.add(curveObject);
 }
 
 
@@ -284,7 +317,7 @@ for (let i = 0; i < NUMBER_OF_STARS; ++i) {
   const position = curves[curve].getPoint(t);
   starTranslate.makeTranslation(position.x, position.y, position.z);
   star.applyMatrix4(starTranslate);
-  scene.add(star);
+  moon.add(star);
 
   stars.push({
     curve: curve,
@@ -325,7 +358,7 @@ for (let i = 0; i < NUMBER_OF_BAD_STARS; ++i) {
   const badStarTranslate = new THREE.Matrix4();
   badStarTranslate.makeTranslation(position.x, position.y, position.z);
   badStar.applyMatrix4(badStarTranslate);
-  scene.add(badStar);
+  moon.add(badStar);
 
   stars.push({
     curve: curve,
@@ -335,15 +368,6 @@ for (let i = 0; i < NUMBER_OF_BAD_STARS; ++i) {
     score: -1
   });
 }
-
-const cameraTranslate = new THREE.Matrix4();
-cameraTranslate.makeTranslation(0,20,0);
-camera.applyMatrix4(cameraTranslate)
-
-camera.position.x = hull.position.x +100 ;
-camera.position.y = hull.position.y + 100;
-camera.position.z = hull.position.z + -100;
-camera.lookAt(hull.position);
 
 let increments = 1_000;
 let t = 0;
@@ -386,13 +410,12 @@ function animate() {
       earth.applyMatrix4(earthTranslate);
     }
 
-    // moon orbit
     {
-      moon.applyMatrix4(moonTranslateInverse);
-      const moonRotation = new THREE.Matrix4();
-      moonRotation.makeRotationY(degrees_to_radians((delta / 16.6) * 0.1));
-      moon.applyMatrix4(moonRotation);
-      moon.applyMatrix4(moonTranslate);
+      moon.applyMatrix4(earthTranslateInverse);
+      const newMoonOrbit = new THREE.Matrix4();
+      newMoonOrbit.makeRotationY(degrees_to_radians((delta / 16.6) * 0.3));
+      moon.applyMatrix4(newMoonOrbit);
+      moon.applyMatrix4(earthTranslate);
     }
 
     if (hull.visible) {
@@ -401,23 +424,37 @@ function animate() {
           const translation = (curves[currentCurve].getPoint(t)).sub(hull.position);
           followCurveMatrix.makeTranslation(translation.x, translation.y, translation.z);
           hull.applyMatrix4(followCurveMatrix);*/
-          camera.position.x = hull.position.x - 100;
-          camera.position.y = hull.position.y + 100;
-          camera.position.z = hull.position.z - 100;
-          camera.lookAt(hull.position);
+          /*
+          const position = new THREE.Vector3();
+          camera.position.x = hull.position.x + 10;
+          camera.position.y = hull.position.y + 10;
+          camera.position.z = hull.position.z - 10;*/
+          //camera.lookAt(hull.position);
       }
 
       {
           const newPosition = curves[currentCurve].getPoint(t);
           const tangent = curves[currentCurve].getTangent(t);
-          hull.position.copy(newPosition);
+
           const up = new THREE.Vector3( 0, 1, 0 );
           const axis = new THREE.Vector3( );
           axis.crossVectors( up, tangent ).normalize();
 
           const radians = Math.acos( up.dot( tangent ) );
 
-          hull.quaternion.setFromAxisAngle( axis, radians );
+          const quat = new THREE.Quaternion();
+          quat.setFromAxisAngle(axis, radians);
+
+          {
+            hull.applyMatrix4(hull.matrix.clone().invert());
+            const transform = new THREE.Matrix4();
+            transform.makeRotationFromQuaternion(quat);
+            hull.applyMatrix4(transform);
+            transform.makeTranslation(newPosition.x, newPosition.y, newPosition.z);
+            hull.applyMatrix4(transform);
+          }
+
+          //hull.quaternion.setFromAxisAngle( axis, radians );
       }
 
       {
@@ -433,9 +470,11 @@ function animate() {
             score += star.score;
             star.collected = true;
             star.object.visible = false;
-        }
-        let pos = new THREE.Vector3();
-        star.object.getWorldPosition(pos);
+        }/*
+        star.object.updateMatrixWorld();
+        let pos = new THREE.Matrix4();
+        star.object.matrix.copyPosition(pos);
+        console.log(star.object);
         {
           let transform = new THREE.Matrix4();
           transform.makeTranslation(-pos.x, -pos.y, -pos.z);
@@ -446,23 +485,13 @@ function animate() {
           transform = new THREE.Matrix4();
           transform.makeTranslation(pos.x, pos.y, pos.z);
           star.object.applyMatrix4(transform);
-        }
+        }*/
       }
 
       flame.material.opacity = ((Math.sin(Date.now() / 70) + 1)/2) * 0.4 + 0.3;
       flame2.material.opacity = ((Math.sin(Date.now() / 200) + 1)/2) * 0.3 + 0.1;
 
       t += (delta / 16.6) * (1.0 / increments);
-
-      /*
-      {
-        const cameraTranslate = new THREE.Matrix4();
-        const translation = hull.position.sub(camera.position);
-        cameraTranslate.makeTranslation(translation.x - 20, translation.y - 20, translation.z - 20);
-        camera.applyMatrix4(cameraTranslate);
-        camera.lookAt(hull.position);
-        camera.updateProjectionMatrix();
-      }*/
 
       if (t >= 1) {
         hull.visible = false;
