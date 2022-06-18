@@ -8,6 +8,9 @@ const START_POINT = new THREE.Vector3( 1,1,1 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+const text = document.createTextNode('SCORE:');
+document.body.appendChild(text);
+
 
 function degrees_to_radians(degrees) {
     var pi = Math.PI;
