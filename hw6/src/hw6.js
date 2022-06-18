@@ -8,13 +8,14 @@ const START_POINT = new THREE.Vector3( 1,1,1 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+const text = document.createTextNode('SCORE:');
+document.body.appendChild(text);
+
 
 function degrees_to_radians(degrees) {
     var pi = Math.PI;
     return degrees * (pi / 180);
 }
-
-// Here we load the cubemap and skymap, you may change it
 
 const loader = new THREE.CubeTextureLoader();
 const texture = loader.load([
