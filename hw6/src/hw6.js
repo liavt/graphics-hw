@@ -343,8 +343,8 @@ const STAR_MODELS = [];
     const dierdreGeometry = new THREE.IcosahedronBufferGeometry(1.4,0);
     const dierdeMaterial = new THREE.MeshPhysicalMaterial({
         color:0x8fd16b,
-        emissive: 0xffe940,
-        metalness: .8,
+        emissive: 0xffffff,
+        metalness: .5,
         emissiveIntensity: 0.1,
 
     })
@@ -356,7 +356,7 @@ const STAR_MODELS = [];
     var meshBasicMaterial = new THREE.MeshBasicMaterial({
         color: 0xcc6e3b,
         wireframe: true,
-        wireframeLinewidth: 2
+        wireframeLinewidth: .1
     });
     STAR_MODELS.push(new THREE.Mesh(torusGeo,meshBasicMaterial));
 }
@@ -376,7 +376,7 @@ const STAR_MODELS = [];
   const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
 
   const transform = new THREE.Matrix4();
-  transform.makeScale(0.5, 0.5, 0.5);
+  transform.makeScale(10, 10, 10);
   const heart = new THREE.Mesh(heartGeometry, heartMaterial);
   heart.applyMatrix4(transform);
   STAR_MODELS.push(heart);
