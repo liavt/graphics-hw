@@ -106,7 +106,6 @@ const satellite = new THREE.Sprite(satelliteSprite);
 satellite.frustumCulled = false;
 const satelliteTranslate = new THREE.Matrix4();
 satelliteTranslate.makeTranslation(120, 15, 150);
-const satelliteTranslateInverse = satelliteTranslate.clone().invert();
 satellite.applyMatrix4(satelliteTranslate);
 const satelliteTransform = new THREE.Matrix4();
 satelliteTransform.makeScale(.1, .1, .1);
@@ -254,9 +253,7 @@ marsTranslate.makeTranslation(120, 15, 0);
 const marsTranslateInverse = marsTranslate.clone().invert();
 mars.applyMatrix4(marsTranslate);
 
-earth.add(mercury);
-earth.add(venus);
-earth.add(mars);
+
 scene.add(moon);
 moon.add(hull);
 moon.add(skybox);
@@ -311,7 +308,6 @@ scene.add(sun);
   const sunTranslate = new THREE.Matrix4();
   sunTranslate.makeTranslation(20, 0, -10);
   sunTarget.applyMatrix4(sunTranslate);
-
   scene.add(sunTarget);
 
   //scene.add( new THREE.AmbientLight( 0xffffff))
@@ -319,10 +315,12 @@ scene.add(sun);
   sunLight.target = earth;
   sunLight.castShadow = true;
   sun.add(sunLight);
-
   //scene.add(new THREE.AmbientLight(0x333333))
 }
 
+sun.add(mercury);
+sun.add(venus);
+sun.add(mars);
 
 // TODO: Bezier Curves
 
@@ -372,8 +370,9 @@ const STAR_MODELS_THREE = [];
 //glowy sphere
 {
   const starGeometry = new THREE.SphereGeometry(1, 40, 400);
-  const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
-  starMaterial.emissive = new THREE.Color(0xffffff);
+  const starMaterial = new THREE.MeshPhongMaterial({color: 0x61449e});
+  starMaterial.emissive = new THREE.Color(0x61449e);
+  starMaterial.shininess = 1;
   STAR_MODELS.push(new THREE.Mesh(starGeometry, starMaterial));
 }
 
