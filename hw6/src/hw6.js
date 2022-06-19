@@ -1,5 +1,4 @@
-//import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-//const controls = new OrbitControls( camera, renderer.domElement );
+import {OrbitControls} from './OrbitControls.js'
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const START_POINT = new THREE.Vector3( 1,1,1 );
@@ -12,16 +11,16 @@ document.body.appendChild(renderer.domElement);
   const text = document.createElement('div');
   text.style.position = "absolute";
   text.style.top = "10px";
-  text.style.left = "10px";
+  text.style.left = "50px";
   text.style.fontSize = "large";
   text.style.color = "white";
-  text.style.width = "100%";
+  text.style.width = "50%";
   text.style.fontFamily = "\"Comic Sans MS\", \"Comic Sans\", cursive";
   text.style.background = "-webkit-linear-gradient(45deg, rgba(131,58,180,1) 91%, rgba(253,29,29,1) 96%, rgba(252,176,69,1) 100%)";
   text.style.webkitBackgroundClip = "text";
   text.style.webkitTextFillColor = "transparent";
   text.style.textAlign = "left";
-  text.innerText = "Spheres: 1\nIcosahederon: 2\nDonut: 3\nSpace Junk: -1"
+  text.innerText = "Legend:\nSpheres: 1\nIcosahederon: 2\nDonut: 3\nSpace Junk: -1"
   document.body.appendChild(text);
 }
 
@@ -32,10 +31,10 @@ text.style.top = "10px";
 text.style.right = "10px";
 text.style.fontSize = "xx-large";
 text.style.color = "white";
-text.style.width = "100%";
+text.style.width = "50%";
 text.style.fontFamily = "\"Comic Sans MS\", \"Comic Sans\", cursive";
 text.style.fontWeight = "bold";
-text.style.background = "-webkit-linear-gradient(45deg, rgba(131,58,180,1) 91%, rgba(253,29,29,1) 96%, rgba(252,176,69,1) 100%)";
+text.style.background = "-webkit-linear-gradient(45deg, rgba(131,58,180,1) 77%, rgba(253,29,29,1) 90%, rgba(252,176,69,1) 100%)";
 text.style.webkitBackgroundClip = "text";
 text.style.webkitTextFillColor = "transparent";
 text.style.textAlign = "right";
@@ -78,12 +77,14 @@ const earthEmission = textureLoader.load('/src/textures/earthlights.jpg');
 const moonTexture = textureLoader.load('src/textures/moon.jpg')
 const moonHeightTexture = textureLoader.load('src/textures/moon_height.jpg')
 const wormTexture = textureLoader.load('src/textures/worm.jpeg')
-const sunTexture = textureLoader.load('src/textures/sun.jpeg');
 const venusTexture = textureLoader.load('src/textures/venus.jpeg');
+const venusHeightTexture = textureLoader.load('src/textures/venus-height.jpeg');
 const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
 const mercuryTexture = textureLoader.load('src/textures/mercury.jpeg');
+const mercuryHeightTexture = textureLoader.load('src/textures/mercury-height.jpeg');
 const satelliteTexture= textureLoader.load('src/textures/.png');
 const marsTexture = textureLoader.load('src/textures/mars.jpeg');
+const marsHeightTexture = textureLoader.load('src/textures/mars-height.jpeg');
 
 // ugly testing planet
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
@@ -197,49 +198,50 @@ hull.add(windows);
 
 
 // You should add both earth and the moon here
-{
-  const starGeometry = new THREE.BufferGeometry();
-  const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, sizeAttenuation: false})
-  const starVertices = []
-  for (let i = 0; i < 10000; i++) {
-      const x = (Math.random() - .5) * 1000
-      const y = (Math.random() - .5) * 1000
-      const z = (Math.random() - .5) * 1000
-      starVertices.push(x, y, z)
-  }
-  starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
-  const stars = new THREE.Points(starGeometry, starMaterial);
-  moon.add(stars);
+const starGeometry = new THREE.BufferGeometry();
+const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1, sizeAttenuation: false})
+const starVertices = []
+for (let i = 0; i < 10000; i++) {
+    const x = (Math.random() - .5) * 1000
+    const y = (Math.random() - .5) * 1000
+    const z = (Math.random() - .5) * 1000
+    starVertices.push(x, y, z)
 }
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
+const starPoints = new THREE.Points(starGeometry, starMaterial);
+moon.add(starPoints);
 
 const venusGeometry = new THREE.SphereGeometry(14, 80, 780);
 const venusMaterial = new THREE.MeshStandardMaterial({
     map: venusTexture,
+    bumpMap: venusHeightTexture,
+    bumpScale: 0.2
 })
 const venus = new THREE.Mesh(venusGeometry, venusMaterial);
 const venusTranslate = new THREE.Matrix4();
 venusTranslate.makeTranslation(120, 15, 250);
-const venusTranslateInverse = venusTranslate.clone().invert();
 venus.applyMatrix4(venusTranslate);
 
 const mercuryGeometry = new THREE.SphereGeometry(5, 80, 780);
 const mercuryMaterial = new THREE.MeshStandardMaterial({
     map: mercuryTexture,
+    bumpMap: mercuryHeightTexture,
+    bumpScale: 0.3
 })
 const mercury = new THREE.Mesh(mercuryGeometry, mercuryMaterial);
 const mercuryTranslate = new THREE.Matrix4();
 mercuryTranslate.makeTranslation(80, -10, 200);
-const mercuryTranslateInverse = mercuryTranslate.clone().invert();
 mercury.applyMatrix4(mercuryTranslate);
 
 const marsGeometry = new THREE.SphereGeometry(8, 80, 780);
 const marsMaterial = new THREE.MeshStandardMaterial({
     map: marsTexture,
+    bumpMap: marsHeightTexture,
+    bumpScale: 0.4
 })
 const mars = new THREE.Mesh(marsGeometry, marsMaterial);
 const marsTranslate = new THREE.Matrix4();
 marsTranslate.makeTranslation(120, 15, 0);
-const marsTranslateInverse = marsTranslate.clone().invert();
 mars.applyMatrix4(marsTranslate);
 
 earth.add(mercury);
@@ -638,7 +640,32 @@ function animate() {
 
       if (t >= 1) {
         hull.visible = false;
-        alert("YOURE A HUNGRY BOY YOU ATE " + score + " STARS");
+
+        if (score < 0) {
+          alert("Looks like you spent more time eating trash than flying");
+        } else if(score === 0) {
+          alert("You have to play the game you know");
+        } else if(score === 1) {
+          alert("It ain't much but it's honest work");
+        } else {
+          alert("YOURE A HUNGRY BOY YOU ATE " + score + " STARS");
+
+          if (score > 5) {
+            alert("You have unlocked New Game+! You can now roam freely around the solar system");
+            moon.remove(camera);
+            moon.remove(skybox);
+            moon.remove(starPoints);
+            scene.add(camera);
+            scene.add(skybox);
+            scene.add(starPoints);
+
+            const controls = new OrbitControls( camera, renderer.domElement );
+
+            for (const star of stars) {
+              star.object.visible = false;
+            }
+          }
+        }
       }
     }
 
