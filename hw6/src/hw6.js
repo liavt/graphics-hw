@@ -20,7 +20,7 @@ document.body.appendChild(renderer.domElement);
   text.style.webkitBackgroundClip = "text";
   text.style.webkitTextFillColor = "transparent";
   text.style.textAlign = "left";
-  text.innerText = "Legend:\nSpheres: 1\nIcosahederon: 2\nDonut: 3\nSpace Junk: -1"
+  text.innerText = "Legend:\nSpheres: 1\nIcosahederon: 2\nShining Star: 3\nDonut: 3\nSpace Junk: -1"
   document.body.appendChild(text);
 }
 
@@ -256,7 +256,7 @@ mars.applyMatrix4(marsTranslate);
 
 scene.add(moon);
 moon.add(hull);
-moon.add(skybox);
+camera.add(skybox);
 
 const cameraTarget = new THREE.Object3D();
 moon.add(cameraTarget);
@@ -322,8 +322,6 @@ sun.add(mercury);
 sun.add(venus);
 sun.add(mars);
 
-// TODO: Bezier Curves
-
 const curves = [
   new THREE.QuadraticBezierCurve3(
     START_POINT,
@@ -342,13 +340,9 @@ const curves = [
   )
 ]
 
-
-// TODO: Camera Settings
-// Set the camera following the spaceship here
-
 renderer.render( scene, camera );
 
-const NUMBER_OF_STARS = 10;
+const NUMBER_OF_STARS = 5;
 const NUMBER_OF_BAD_STARS = 5;
 const stars = []
 
@@ -356,7 +350,6 @@ const STAR_MODELS = [];
 const STAR_MODELS_TWO = [];
 const STAR_MODELS_THREE = [];
 
-//glowy sphere
 {
   const starGeometry = new THREE.SphereGeometry(1, 40, 400);
   const starMaterial = new THREE.MeshPhongMaterial({color: 0x61449e});
@@ -387,30 +380,21 @@ const STAR_MODELS_THREE = [];
     STAR_MODELS_THREE.push(new THREE.Mesh(torusGeo,meshBasicMaterial));
 }
 
-{
-  const x = 0, y = 0;
-  const heartShape = new THREE.Shape();
-  heartShape.moveTo(x + 5, y + 5);
-  heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-  heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
-  heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
-  heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
-  heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
-  heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
 
-  const heartGeometry = new THREE.ShapeGeometry(heartShape);
-  const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
+{var starGeo = new THREE.TorusKnotGeometry(2.489, 3.3066, 30, 4, 2, 10)
 
-  const transform = new THREE.Matrix4();
-  transform.makeScale(10, 10, 10);
-  const heart = new THREE.Mesh(heartGeometry, heartMaterial);
-  heart.applyMatrix4(transform);
-  //STAR_MODELS.push(heart);
+    var starGeoMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xfff585,
+        emissive: 0xfff585,
+        emissiveIntensity: 1,
+    });
+    const transform = new THREE.Matrix4();
+    transform.makeScale(.2, .2, .2);
+    const star = new THREE.Mesh(starGeo, starGeoMaterial);
+    star.applyMatrix4(transform);
+    STAR_MODELS_THREE.push(star);
 }
-{
-  //const donut = objLoader.load("obj/donut.obj");
-  //STAR_MODELS.push(donut);
-}
+
 function addStar(models, score) {
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
@@ -537,6 +521,14 @@ function animate() {
       moon.applyMatrix4(earthTranslate);
     }
 
+    {
+        sun.applyMatrix4(sunTranslateInverse);
+        const sunRotation = new THREE.Matrix4();
+        sunRotation.makeRotationY(degrees_to_radians((delta / 16.6) * .5));
+        sun.applyMatrix4(sunRotation);
+        sun.applyMatrix4(sunTranslate);
+    }
+
     if (hull.visible) {
       {
           /*const followCurveMatrix = new THREE.Matrix4();
@@ -647,13 +639,13 @@ function animate() {
         } else {
           alert("YOURE A HUNGRY BOY YOU ATE " + score + " STARS");
 
-          if (score > 5) {
+          if (score >= 5) {
             alert("You have unlocked New Game+! You can now roam freely around the solar system");
             moon.remove(camera);
-            moon.remove(skybox);
+            //moon.remove(skybox);
             moon.remove(starPoints);
             scene.add(camera);
-            scene.add(skybox);
+            //scene.add(skybox);
             scene.add(starPoints);
 
             const controls = new OrbitControls( camera, renderer.domElement );
