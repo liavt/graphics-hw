@@ -7,6 +7,24 @@ const START_POINT = new THREE.Vector3( 1,1,1 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+{
+  const text = document.createElement('div');
+  text.style.position = "absolute";
+  text.style.top = "10px";
+  text.style.left = "10px";
+  text.style.fontSize = "large";
+  text.style.color = "white";
+  text.style.width = "100%";
+  text.style.fontFamily = "\"Comic Sans MS\", \"Comic Sans\", cursive";
+  text.style.background = "-webkit-linear-gradient(45deg, rgba(131,58,180,1) 91%, rgba(253,29,29,1) 96%, rgba(252,176,69,1) 100%)";
+  text.style.webkitBackgroundClip = "text";
+  text.style.webkitTextFillColor = "transparent";
+  text.style.textAlign = "left";
+  text.innerText = "Spheres: 1\nIcosahederon: 2\nDonut: 3\nSpace Junk: -1"
+  document.body.appendChild(text);
+}
+
 const text = document.createElement('div');
 text.innerText = "SCORE: 0";
 text.style.position = "absolute";
@@ -15,8 +33,14 @@ text.style.right = "10px";
 text.style.fontSize = "xx-large";
 text.style.color = "white";
 text.style.width = "100%";
+text.style.fontFamily = "\"Comic Sans MS\", \"Comic Sans\", cursive";
+text.style.fontWeight = "bold";
+text.style.background = "-webkit-linear-gradient(45deg, rgba(131,58,180,1) 91%, rgba(253,29,29,1) 96%, rgba(252,176,69,1) 100%)";
+text.style.webkitBackgroundClip = "text";
+text.style.webkitTextFillColor = "transparent";
 text.style.textAlign = "right";
 document.body.appendChild(text);
+
 
 
 function degrees_to_radians(degrees) {
@@ -304,7 +328,7 @@ for (const curve of curves) {
 
   // Create the final object to add to the scene
   const curveObject = new THREE.Line( geometry, material );
-  moon.add(curveObject);
+  //moon.add(curveObject);
 }
 
 
@@ -318,6 +342,8 @@ const NUMBER_OF_BAD_STARS = 5;
 const stars = []
 
 const STAR_MODELS = [];
+const STAR_MODELS_TWO = [];
+const STAR_MODELS_THREE = [];
 
 //glowy sphere
 {
@@ -325,6 +351,8 @@ const STAR_MODELS = [];
   const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
   starMaterial.emissive = new THREE.Color(0xffffff);
   STAR_MODELS.push(new THREE.Mesh(starGeometry, starMaterial));
+  STAR_MODELS_TWO.push(new THREE.Mesh(starGeometry, starMaterial));
+  STAR_MODELS_THREE.push(new THREE.Mesh(starGeometry, starMaterial));
 }
 
 {
@@ -352,12 +380,17 @@ const STAR_MODELS = [];
   //STAR_MODELS.push(donut);
 }
 
-for (let i = 0; i < NUMBER_OF_STARS; ++i) {
+function addStar(models, score) {
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
 
-  const star = STAR_MODELS[Math.floor(Math.random() * STAR_MODELS.length)].clone();
+  const star = models[Math.floor(Math.random() * STAR_MODELS.length)].clone();
   const starTranslate = new THREE.Matrix4();
+  {
+    const badStarRotate = new THREE.Matrix4();
+    badStarRotate.makeRotationFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6));
+    star.applyMatrix4(badStarRotate);
+  }
   const position = curves[curve].getPoint(t);
   starTranslate.makeTranslation(position.x, position.y, position.z);
   star.applyMatrix4(starTranslate);
@@ -368,8 +401,20 @@ for (let i = 0; i < NUMBER_OF_STARS; ++i) {
     t: t,
     object: star,
     collected: false,
-    score: 1
+    score: score
   });
+}
+
+for (let i = 0; i < NUMBER_OF_STARS; ++i) {
+  addStar(STAR_MODELS, 1);
+}
+
+for (let i = 0; i < NUMBER_OF_STARS / 2; ++i) {
+  addStar(STAR_MODELS_TWO, 1);
+}
+
+for (let i = 0; i < NUMBER_OF_STARS / 4; ++i) {
+  addStar(STAR_MODELS_THREE, 3);
 }
 
 
