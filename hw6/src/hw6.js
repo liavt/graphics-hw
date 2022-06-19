@@ -40,7 +40,7 @@ text.style.webkitTextFillColor = "transparent";
 text.style.textAlign = "right";
 document.body.appendChild(text);
 
-
+document.title = "SPACE COWBOYS 🤠"
 
 function degrees_to_radians(degrees) {
     var pi = Math.PI;
@@ -77,13 +77,13 @@ const earthEmission = textureLoader.load('/src/textures/earthlights.jpg');
 const moonTexture = textureLoader.load('src/textures/moon.jpg')
 const moonHeightTexture = textureLoader.load('src/textures/moon_height.jpg')
 const venusTexture = textureLoader.load('src/textures/venus.jpeg');
-const venusHeightTexture = textureLoader.load('src/textures/venus-height.jpeg');
+const venusHeightTexture = textureLoader.load('src/textures/venus-height.jpg');
 const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
 const mercuryTexture = textureLoader.load('src/textures/mercury.jpeg');
-const mercuryHeightTexture = textureLoader.load('src/textures/mercury-height.jpeg');
+const mercuryHeightTexture = textureLoader.load('src/textures/mercury-height.jpg');
 const satelliteTexture= textureLoader.load('src/textures/satellite.png');
 const marsTexture = textureLoader.load('src/textures/mars.jpeg');
-const marsHeightTexture = textureLoader.load('src/textures/mars-height.jpeg');
+const marsHeightTexture = textureLoader.load('src/textures/mars-height.jpg');
 
 // ugly testing planet
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
@@ -122,7 +122,6 @@ const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 const moonTranslate = new THREE.Matrix4();
 moonTranslate.makeTranslation(0, 0, 0);
 moon.applyMatrix4(moonTranslate);
-const moonTranslateInverse = moonTranslate.clone().invert();
 
 const hullGeometry = new THREE.CylinderGeometry(1, 1, 3, 30);
 const hullMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
@@ -343,17 +342,6 @@ const curves = [
   )
 ]
 
-for (const curve of curves) {
-  const points = curve.getPoints( 50 );
-  const geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-  const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-
-  // Create the final object to add to the scene
-  const curveObject = new THREE.Line( geometry, material );
-  //moon.add(curveObject);
-}
-
 
 // TODO: Camera Settings
 // Set the camera following the spaceship here
@@ -424,7 +412,6 @@ const STAR_MODELS_THREE = [];
   //STAR_MODELS.push(donut);
 }
 function addStar(models, score) {
-  console.log(models);
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
 
