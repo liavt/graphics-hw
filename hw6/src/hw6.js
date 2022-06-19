@@ -82,7 +82,7 @@ const sunTexture = textureLoader.load('src/textures/sun.jpeg');
 const venusTexture = textureLoader.load('src/textures/venus.jpeg');
 const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
 const mercuryTexture = textureLoader.load('src/textures/mercury.jpeg');
-const satelliteTexture= textureLoader.load('src/textures/.png');
+const satelliteTexture= textureLoader.load('src/textures/satellite.png');
 const marsTexture = textureLoader.load('src/textures/mars.jpeg');
 
 // ugly testing planet
@@ -101,14 +101,17 @@ const earthTranslateInverse = earthTranslate.clone().invert();
 earth.applyMatrix4(earthTranslate);
 scene.add(earth);
 
-const satelliteSprite = new THREE.SpriteMaterial({map: sunRaysTexture, sizeAttenuation: false});
+const satelliteSprite = new THREE.SpriteMaterial({map: satelliteTexture, sizeAttenuation: false});
 const satellite = new THREE.Sprite(satelliteSprite);
-sun.frustumCulled = false;
-const sunTranslate = new THREE.Matrix4();
-sunTranslate.makeTranslation(100, 5, 300);
-const sunTranslateInverse = sunTranslate.clone().invert();
-sun.applyMatrix4(sunTranslate);
-scene.add(sun);
+satellite.frustumCulled = false;
+const satelliteTranslate = new THREE.Matrix4();
+satelliteTranslate.makeTranslation(120, 15, 150);
+const satelliteTranslateInverse = satelliteTranslate.clone().invert();
+satellite.applyMatrix4(satelliteTranslate);
+const satelliteTransform = new THREE.Matrix4();
+satelliteTransform.makeScale(.1, .1, .1);
+satellite.applyMatrix4(satelliteTransform);
+earth.add(satellite);
 
 const moonGeometry = new THREE.SphereGeometry(3, 40, 400);
 const moonMaterial = new THREE.MeshStandardMaterial({
