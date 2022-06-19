@@ -77,6 +77,15 @@ const earthTranslateInverse = earthTranslate.clone().invert();
 earth.applyMatrix4(earthTranslate);
 scene.add(earth);
 
+const satelliteSprite = new THREE.SpriteMaterial({map: sunRaysTexture, sizeAttenuation: false});
+const satellite = new THREE.Sprite(satelliteSprite);
+sun.frustumCulled = false;
+const sunTranslate = new THREE.Matrix4();
+sunTranslate.makeTranslation(100, 5, 300);
+const sunTranslateInverse = sunTranslate.clone().invert();
+sun.applyMatrix4(sunTranslate);
+scene.add(sun);
+
 const moonGeometry = new THREE.SphereGeometry(3, 40, 400);
 const moonMaterial = new THREE.MeshStandardMaterial({
   map: moonTexture,
