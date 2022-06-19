@@ -81,8 +81,9 @@ const wormTexture = textureLoader.load('src/textures/worm.jpeg')
 const sunTexture = textureLoader.load('src/textures/sun.jpeg');
 const venusTexture = textureLoader.load('src/textures/venus.jpeg');
 const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
-const mercuryTexture = textureLoader.load('src/textures/mercury.png');
-
+const mercuryTexture = textureLoader.load('src/textures/mercury.jpeg');
+const satelliteTexture= textureLoader.load('src/textures/.png');
+const marsTexture = textureLoader.load('src/textures/mars.jpeg');
 
 // ugly testing planet
 const earthGeometry = new THREE.SphereGeometry(15, 80, 780);
@@ -231,8 +232,19 @@ mercuryTranslate.makeTranslation(80, -10, 200);
 const mercuryTranslateInverse = mercuryTranslate.clone().invert();
 mercury.applyMatrix4(mercuryTranslate);
 
+const marsGeometry = new THREE.SphereGeometry(8, 80, 780);
+const marsMaterial = new THREE.MeshStandardMaterial({
+    map: marsTexture,
+})
+const mars = new THREE.Mesh(marsGeometry, marsMaterial);
+const marsTranslate = new THREE.Matrix4();
+marsTranslate.makeTranslation(120, 15, 0);
+const marsTranslateInverse = marsTranslate.clone().invert();
+mars.applyMatrix4(marsTranslate);
+
 earth.add(mercury);
 earth.add(venus);
+earth.add(mars);
 scene.add(moon);
 moon.add(hull);
 moon.add(skybox);
@@ -356,6 +368,28 @@ const STAR_MODELS_THREE = [];
 }
 
 {
+    const dierdreGeometry = new THREE.IcosahedronBufferGeometry(1.4,0);
+    const dierdeMaterial = new THREE.MeshPhysicalMaterial({
+        color:0x8fd16b,
+        emissive: 0xffffff,
+        metalness: .5,
+        emissiveIntensity: 0.1,
+
+    })
+    STAR_MODELS.push(new THREE.Mesh(dierdreGeometry,dierdeMaterial));
+}
+
+{var torusGeo = new THREE.TorusGeometry(1, .33, 16, 100)
+
+    var meshBasicMaterial = new THREE.MeshBasicMaterial({
+        color: 0xcc6e3b,
+        wireframe: true,
+        wireframeLinewidth: .1
+    });
+    STAR_MODELS.push(new THREE.Mesh(torusGeo,meshBasicMaterial));
+}
+
+{
   const x = 0, y = 0;
   const heartShape = new THREE.Shape();
   heartShape.moveTo(x + 5, y + 5);
@@ -370,10 +404,10 @@ const STAR_MODELS_THREE = [];
   const heartMaterial = new THREE.MeshPhongMaterial({color: 0xc9557a});
 
   const transform = new THREE.Matrix4();
-  transform.makeScale(0.5, 0.5, 0.5);
+  transform.makeScale(10, 10, 10);
   const heart = new THREE.Mesh(heartGeometry, heartMaterial);
   heart.applyMatrix4(transform);
-  //STAR_MODELS.push(heart);
+  STAR_MODELS.push(heart);
 }
 {
   //const donut = objLoader.load("obj/donut.obj");
