@@ -7,7 +7,7 @@ const START_POINT = new THREE.Vector3( 1,1,1 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-const text = document.createElement('blink');
+const text = document.createElement('div');
 text.innerText = "SCORE: 0";
 text.style.position = "absolute";
 text.style.top = "10px";
