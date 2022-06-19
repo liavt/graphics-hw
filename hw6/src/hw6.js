@@ -48,9 +48,9 @@ const moonTexture = textureLoader.load('src/textures/moon.jpg')
 const moonHeightTexture = textureLoader.load('src/textures/moon_height.jpg')
 const wormTexture = textureLoader.load('src/textures/worm.jpeg')
 const sunTexture = textureLoader.load('src/textures/sun.jpeg');
-const venusTexture = textureLoader.load('src/textures/2k_venus_surface.jpeg');
+const venusTexture = textureLoader.load('src/textures/venus.jpeg');
 const sunRaysTexture = textureLoader.load('src/textures/sunrays.png');
-
+const mercuryTexture = textureLoader.load('src/textures/mercury.png');
 
 
 // ugly testing planet
@@ -180,8 +180,29 @@ hull.add(windows);
   moon.add(stars);
 }
 
-scene.add(moon);
+const venusGeometry = new THREE.SphereGeometry(14, 80, 780);
+const venusMaterial = new THREE.MeshStandardMaterial({
+    map: venusTexture,
+})
+const venus = new THREE.Mesh(venusGeometry, venusMaterial);
+const venusTranslate = new THREE.Matrix4();
+venusTranslate.makeTranslation(120, 15, 250);
+const venusTranslateInverse = venusTranslate.clone().invert();
+venus.applyMatrix4(venusTranslate);
 
+const mercuryGeometry = new THREE.SphereGeometry(5, 80, 780);
+const venusMaterial = new THREE.MeshStandardMaterial({
+    map: mercuryTexture,
+})
+const mercury = new THREE.Mesh(mercuryGeometry, mercuryMaterial);
+const mercuryTranslate = new THREE.Matrix4();
+mercuryTranslate.makeTranslation(80, -10, 200);
+const mercuryTranslateInverse = mercuryTranslate.clone().invert();
+mercury.applyMatrix4(mercuryTranslate);
+
+earth.add(mercury);
+earth.add(venus);
+scene.add(moon);
 moon.add(hull);
 hull.add(camera);
 moon.add(skybox);
@@ -201,7 +222,7 @@ moon.add(skybox);
 
 {
   const cameraTransform = new THREE.Matrix4();
-  cameraTransform.makeTranslation(0, -30, -10);
+  cameraTransform.makeTranslation(50, -100, -100);
   camera.applyMatrix4(cameraTransform);
 }
 
