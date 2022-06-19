@@ -363,8 +363,6 @@ const STAR_MODELS_THREE = [];
   const starMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
   starMaterial.emissive = new THREE.Color(0xffffff);
   STAR_MODELS.push(new THREE.Mesh(starGeometry, starMaterial));
-  STAR_MODELS_TWO.push(new THREE.Mesh(starGeometry, starMaterial));
-  STAR_MODELS_THREE.push(new THREE.Mesh(starGeometry, starMaterial));
 }
 
 {
@@ -376,7 +374,7 @@ const STAR_MODELS_THREE = [];
         emissiveIntensity: 0.1,
 
     })
-    STAR_MODELS.push(new THREE.Mesh(dierdreGeometry,dierdeMaterial));
+    STAR_MODELS_TWO.push(new THREE.Mesh(dierdreGeometry,dierdeMaterial));
 }
 
 {var torusGeo = new THREE.TorusGeometry(1, .33, 16, 100)
@@ -386,7 +384,7 @@ const STAR_MODELS_THREE = [];
         wireframe: true,
         wireframeLinewidth: .1
     });
-    STAR_MODELS.push(new THREE.Mesh(torusGeo,meshBasicMaterial));
+    STAR_MODELS_THREE.push(new THREE.Mesh(torusGeo,meshBasicMaterial));
 }
 
 {
@@ -407,18 +405,18 @@ const STAR_MODELS_THREE = [];
   transform.makeScale(10, 10, 10);
   const heart = new THREE.Mesh(heartGeometry, heartMaterial);
   heart.applyMatrix4(transform);
-  STAR_MODELS.push(heart);
+  //STAR_MODELS.push(heart);
 }
 {
   //const donut = objLoader.load("obj/donut.obj");
   //STAR_MODELS.push(donut);
 }
-
 function addStar(models, score) {
+  console.log(models);
   const curve = Math.floor(Math.random() * curves.length);
   const t = Math.random();
 
-  const star = models[Math.floor(Math.random() * STAR_MODELS.length)].clone();
+  const star = models[Math.floor(Math.random() * models.length)].clone();
   const starTranslate = new THREE.Matrix4();
   {
     const badStarRotate = new THREE.Matrix4();
