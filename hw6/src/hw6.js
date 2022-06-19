@@ -7,7 +7,15 @@ const START_POINT = new THREE.Vector3( 1,1,1 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-const text = document.createTextNode('SCORE:');
+const text = document.createElement('div');
+text.innerText = "SCORE: 0";
+text.style.position = "absolute";
+text.style.top = "10px";
+text.style.right = "10px";
+text.style.fontSize = "xx-large";
+text.style.color = "white";
+text.style.width = "100%";
+text.style.textAlign = "right";
 document.body.appendChild(text);
 
 
@@ -94,17 +102,17 @@ head.applyMatrix4(headTranslate);
 hull.add(head);
 
 {
-  const headLightTrack = new THREE.Object3D();
-  const headLightTranslate = new THREE.Matrix4();
-  headLightTranslate.makeTranslation(0, 2, 0);
-  headLightTrack.applyMatrix4(headLightTranslate);
-  hull.add(headLightTrack);
+  const exhaustLightTrack = new THREE.Object3D();
+  const exhaustLightTranslate = new THREE.Matrix4();
+  exhaustLightTranslate.makeTranslation(10, 0, 0);
+  exhaustLightTrack.applyMatrix4(exhaustLightTranslate);
+  hull.add(exhaustLightTrack);
 
-  const headlight = new THREE.SpotLight(0xff0000);
-  headlight.distance = 30;
-  headlight.castShadow = true;
-  hull.add(headlight);
-  headlight.target = headLightTrack;
+  const exhaustlight = new THREE.SpotLight(0xff0000);
+  exhaustlight.distance = 30;
+  exhaustlight.castShadow = true;
+  hull.add(exhaustlight);
+  exhaustlight.target = hull;
 }
 
 const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.7, 20), new THREE.MeshPhongMaterial({color: 0x333333}));
@@ -215,8 +223,11 @@ earth.add(venus);
 earth.add(mars);
 scene.add(moon);
 moon.add(hull);
-hull.add(camera);
 moon.add(skybox);
+
+const cameraTarget = new THREE.Object3D();
+moon.add(cameraTarget);
+cameraTarget.add(camera);
 
 
 {
@@ -233,10 +244,21 @@ moon.add(skybox);
 
 {
   const cameraTransform = new THREE.Matrix4();
-  cameraTransform.makeTranslation(50, -100, -100);
+  cameraTransform.makeTranslation(0, -30, -10);
   camera.applyMatrix4(cameraTransform);
 }
 
+const spotLight = new THREE.SpotLight(0xffffff);
+spotLight.distance = 30;
+spotLight.castShadow = true;
+hull.add(spotLight);
+spotLight.target = hull;
+
+{
+  const cameraTransform = new THREE.Matrix4();
+  cameraTransform.makeTranslation(10, 10, 0);
+  spotLight.applyMatrix4(cameraTransform);
+}
 
 const sunRay = new THREE.SpriteMaterial({map: sunRaysTexture, sizeAttenuation: false});
 const sun = new THREE.Sprite(sunRay);
@@ -440,7 +462,6 @@ const handle_keydown = (e) => {
     } else if (e.code == 'ArrowUp') {
         increments = Math.max(increments - 100, 100);
     }
-    console.log(currentCurve);
 }
 document.addEventListener('keydown', handle_keydown);
 
@@ -509,8 +530,29 @@ function animate() {
             transform.makeTranslation(newPosition.x, newPosition.y, newPosition.z);
             hull.applyMatrix4(transform);
           }
+      }
 
-          //hull.quaternion.setFromAxisAngle( axis, radians );
+      {
+          const newPosition = curves[1].getPoint(t);
+          const tangent = curves[1].getTangent(t);
+
+          const up = new THREE.Vector3( 0, 1, 0 );
+          const axis = new THREE.Vector3( );
+          axis.crossVectors( up, tangent ).normalize();
+
+          const radians = Math.acos( up.dot( tangent ) );
+
+          const quat = new THREE.Quaternion();
+          quat.setFromAxisAngle(axis, radians);
+
+          {
+            cameraTarget.applyMatrix4(cameraTarget.matrix.clone().invert());
+            const transform = new THREE.Matrix4();
+            transform.makeRotationFromQuaternion(quat);
+            cameraTarget.applyMatrix4(transform);
+            transform.makeTranslation(newPosition.x, newPosition.y, newPosition.z);
+            cameraTarget.applyMatrix4(transform);
+          }
       }
 
       {
@@ -524,10 +566,10 @@ function animate() {
           && currentCurve === star.curve
           && Math.abs(t - star.t) <= 2 * (delta / 16.6) * (1.0 / increments)) {
             score += star.score;
+            text.innerText = "SCORE: " + score;
             star.collected = true;
             star.object.visible = false;
         }
-        console.log(star.object.matrix);
         /*
         star.object.updateMatrixWorld();
         let pos = new THREE.Matrix4();
